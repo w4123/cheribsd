@@ -36,6 +36,7 @@
 #include <machine/asm.h>
 __FBSDID("$FreeBSD$");
 
+#include <machine/cherireg.h>
 #include <machine/riscvreg.h>
 #include <sys/errno.h>
 
@@ -87,6 +88,10 @@ END(copyio_fault)
 #ifdef __CHERI_PURE_CAPABILITY__
 	clgc	ca6, copyio_fault	/* Get the handler address */
 	SET_FAULT_HANDLER(ca6, ca7)	/* Set the handler */
+#ifdef CHERI_RESTRICT_KERNCAP_FLOW
+	li	t2, ~CHERI_PERM_STORE_LOCAL_CAP
+	candperm	ca1, ca1, t2
+#endif
 #else
 	la	a6, copyio_fault	/* Get the handler address */
 	SET_FAULT_HANDLER(a6, a7)	/* Set the handler */
@@ -227,6 +232,10 @@ ENTRY(copyinstr)
 #ifdef __CHERI_PURE_CAPABILITY__
 	clgc	ca6, copyio_fault /* Get the handler address */
 	SET_FAULT_HANDLER(ca6, ca7) /* Set the handler */
+#ifdef CHERI_RESTRICT_KERNCAP_FLOW
+	li	t2, ~CHERI_PERM_STORE_LOCAL_CAP
+	candperm	ca1, ca1, t2
+#endif
 #else
 	la	a6, copyio_fault /* Get the handler address */
 	SET_FAULT_HANDLER(a6, a7) /* Set the handler */
@@ -291,6 +300,10 @@ END(copyinstr)
 #ifdef __CHERI_PURE_CAPABILITY__
 	clgc	ca6, copyio_fault	/* Get the handler address */
 	SET_FAULT_HANDLER(ca6, ca7)	/* Set the handler */
+#ifdef CHERI_RESTRICT_KERNCAP_FLOW
+	li	t2, ~CHERI_PERM_STORE_LOCAL_CAP
+	candperm	ca1, ca1, t2
+#endif
 #else
 	la	a6, copyio_fault	/* Get the handler address */
 	SET_FAULT_HANDLER(a6, a7)	/* Set the handler */
