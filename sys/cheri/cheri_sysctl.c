@@ -83,3 +83,24 @@ u_int	security_cheri_bound_legacy_capabilities;
 SYSCTL_INT(_security_cheri, OID_AUTO, bound_legacy_capabilities,
     CTLFLAG_RWTUN, &security_cheri_bound_legacy_capabilities, 0,
     "Set bounds on userspace capabilities created by legacy ABIs.");
+
+/* Generic software-inspectable kernel information */
+static bool security_cheri_purecap_kernel =
+#ifdef __CHERI_PURE_CAPABILITY__
+    true;
+#else
+    false;
+#endif
+SYSCTL_BOOL(_security_cheri, OID_AUTO, purecap_kernel,
+    CTLFLAG_RD, &security_cheri_purecap_kernel, 0,
+    "Kernel uses pure-capability ABI protection features.");
+
+static bool security_cheri_kernel_capability_flow_restriction =
+#ifdef CHERI_RESTRICT_KERNCAP_FLOW
+    true;
+#else
+    false;
+#endif
+SYSCTL_BOOL(_security_cheri, OID_AUTO, restrict_kernel_capflow,
+    CTLFLAG_RD, &security_cheri_kernel_capability_flow_restriction, 0,
+    "Kernel implements capability leak protection.");
