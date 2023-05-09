@@ -4869,6 +4869,10 @@ pmap_map_io_transient(vm_page_t page[], vm_pointer_t vaddr[], int count,
 #ifdef __CHERI_PURE_CAPABILITY__
 			vaddr[i] = (vm_pointer_t)cheri_setboundsexact(
 			    (void *)vaddr[i], PAGE_SIZE);
+#ifdef CHERI_RESTRICT_KERNCAP_FLOW
+			vaddr[i] = cheri_clearperm(vaddr[i],
+			    CHERI_PERM_STORE_LOCAL_CAP);
+#endif
 #endif
 		}
 	}
