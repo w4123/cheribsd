@@ -197,6 +197,19 @@ CFLAGS+=	-fPIE
 .endif
 .endif
 
+.if defined(ONLY_CALLGRAPH)
+STAGE_FLAGS= -S -emit-llvm
+NORMAL_C= ${CC} -S -emit-llvm -o ${.TARGET} ${CFLAGS} ${WERROR} ${.IMPSRC}
+NORMAL_S= touch ${.TARGET}
+NORMAL_C_NOWERROR= ${CC} -S -emit-llvm -o ${.TARGET} ${CFLAGS} ${.IMPSRC}
+
+NORMAL_M= ${AWK} -f $S/tools/makeobjops.awk ${.IMPSRC} -c ; \
+	  ${CC} -S -emit-llvm -o ${.PREFIX}.o ${CFLAGS} ${WERROR} ${.PREFIX}.c
+
+NORMAL_FW= uudecode -o ${.TARGET} ${.ALLSRC}
+NORMAL_FWO= touch ${.TARGET}
+.else
+STAGE_FLAGS= -c
 NORMAL_C= ${CC} -c ${CFLAGS} ${WERROR} ${.IMPSRC}
 NORMAL_S= ${CC:N${CCACHE_BIN}} -c ${ASM_CFLAGS} ${WERROR} ${.IMPSRC}
 NORMAL_C_NOWERROR= ${CC} -c ${CFLAGS} ${.IMPSRC}
@@ -208,11 +221,18 @@ NORMAL_FW= uudecode -o ${.TARGET} ${.ALLSRC}
 NORMAL_FWO= ${CC:N${CCACHE_BIN}} -c ${ASM_CFLAGS} ${WERROR} -o ${.TARGET} \
 	$S/kern/firmw.S -DFIRMW_FILE=\""${.ALLSRC:M*.fw}"\" \
 	-DFIRMW_SYMBOL="${.ALLSRC:M*.fw:C/[-.\/]/_/g}"
+.endif
 
 # for ZSTD in the kernel (include zstd/lib/freebsd before other CFLAGS)
+.if defined(ONLY_CALLGRAPH)
+ZSTD_C= ${CC} -S -emit-llvm -o ${.TARGET} -DZSTD_HEAPMODE=1 -I$S/contrib/zstd/lib/freebsd ${CFLAGS} \
+	-I$S/contrib/zstd/lib -I$S/contrib/zstd/lib/common ${WERROR} \
+	-Wno-missing-prototypes -U__BMI__ -DZSTD_NO_INTRINSICS ${.IMPSRC}
+.else
 ZSTD_C= ${CC} -c -DZSTD_HEAPMODE=1 -I$S/contrib/zstd/lib/freebsd ${CFLAGS} \
 	-I$S/contrib/zstd/lib -I$S/contrib/zstd/lib/common ${WERROR} \
 	-Wno-missing-prototypes -U__BMI__ -DZSTD_NO_INTRINSICS ${.IMPSRC}
+.endif
 # https://github.com/facebook/zstd/commit/812e8f2a [zstd 1.4.1]
 # "Note that [GCC] autovectorization still does not do a good job on the
 # optimized version, so it's turned off via attribute and flag.  I found
@@ -253,7 +273,11 @@ CDDL_CFLAGS=	\
 	-include ${ZINCDIR}/os/freebsd/spl/sys/ccompile.h \
 	-I$S/cddl/contrib/opensolaris/uts/common \
 	-I$S -I$S/cddl/compat/opensolaris
+.if defined(ONLY_CALLGRAPH)
+CDDL_C=		${CC} -S -emit-llvm -o ${.TARGET} ${CDDL_CFLAGS} ${WERROR} ${.IMPSRC}
+.else
 CDDL_C=		${CC} -c ${CDDL_CFLAGS} ${WERROR} ${.IMPSRC}
+.endif
 
 # Special flags for managing the compat compiles for ZFS
 ZFS_CFLAGS+=	-I$S/contrib/openzfs/module/icp/include \
@@ -277,13 +301,23 @@ ZFS_CFLAGS+=	-Xclang -cheri-bounds=conservative
 .endif
 
 ZFS_ASM_CFLAGS= -x assembler-with-cpp -DLOCORE ${ZFS_CFLAGS}
+.if defined(ONLY_CALLGRAPH)
+ZFS_C=		${CC} -S -emit-llvm -o ${.TARGET} ${ZFS_CFLAGS} ${WERROR} ${.IMPSRC}
+ZFS_RPC_C=	${CC} -S -emit-llvm -o ${.TARGET} ${ZFS_CFLAGS} -DHAVE_RPC_TYPES ${WERROR} ${.IMPSRC}
+ZFS_S=		touch ${.TARGET}
+.else
 ZFS_C=		${CC} -c ${ZFS_CFLAGS} ${WERROR} ${.IMPSRC}
 ZFS_RPC_C=	${CC} -c ${ZFS_CFLAGS} -DHAVE_RPC_TYPES ${WERROR} ${.IMPSRC}
 ZFS_S=		${CC} -c ${ZFS_ASM_CFLAGS} ${WERROR} ${.IMPSRC}
+.endif
 
 # ATH driver
 ATH_CFLAGS=	-I${SRCTOP}/sys/dev/ath ${NO_WUNUSED_BUT_SET_VARIABLE}
+.if defined(ONLY_CALLGRAPH)
+ATH_C=		${CC} -S -emit-llvm -o ${.TARGET} ${CFLAGS} ${WERROR} ${ATH_CFLAGS} ${.IMPSRC}
+.else
 ATH_C=		${CC} -c ${CFLAGS} ${WERROR} ${ATH_CFLAGS} ${.IMPSRC}
+.endif
 
 # Special flags for managing the compat compiles for DTrace
 DTRACE_CFLAGS=	-DBUILDING_DTRACE ${CDDL_CFLAGS} -I$S/cddl/dev/dtrace -I$S/cddl/dev/dtrace/${MACHINE_CPUARCH}
@@ -293,20 +327,33 @@ DTRACE_CFLAGS+=	-I$S/cddl/contrib/opensolaris/uts/intel -I$S/cddl/dev/dtrace/x86
 DTRACE_CFLAGS+=	-I$S/cddl/contrib/opensolaris/common/util -I$S -DDIS_MEM -DSMP -I$S/cddl/compat/opensolaris
 DTRACE_CFLAGS+=	-I$S/cddl/contrib/opensolaris/uts/common
 DTRACE_ASM_CFLAGS=	-x assembler-with-cpp -DLOCORE ${DTRACE_CFLAGS}
+.if defined(ONLY_CALLGRAPH)
+DTRACE_C=	${CC} -S -emit-llvm -o ${.TARGET} ${DTRACE_CFLAGS}	${WERROR} ${.IMPSRC}
+DTRACE_S=	touch ${.TARGET}
+.else
 DTRACE_C=	${CC} -c ${DTRACE_CFLAGS}	${WERROR} ${.IMPSRC}
 DTRACE_S=	${CC} -c ${DTRACE_ASM_CFLAGS}	${WERROR} ${.IMPSRC}
+.endif
 
 # zlib code supports systems that are quite old, but will fix this issue once C2x gets radified.
 # see https://github.com/madler/zlib/issues/633 for details
 ZLIB_CFLAGS=	-Wno-cast-qual ${NO_WDEPRECATED_NON_PROTOTYPE} ${NO_WSTRICT_PROTOTYPES}
+.if defined(ONLY_CALLGRAPH)
+ZLIB_C=		${CC} -S -emit-llvm -o ${.TARGET} ${CFLAGS} ${WERROR} ${ZLIB_CFLAGS} ${.IMPSRC}
+.else
 ZLIB_C=		${CC} -c ${CFLAGS} ${WERROR} ${ZLIB_CFLAGS} ${.IMPSRC}
+.endif
 
 # Special flags for managing the compat compiles for DTrace/FBT
 FBT_CFLAGS=	-DBUILDING_DTRACE -nostdinc -I$S/cddl/dev/fbt/${MACHINE_CPUARCH} -I$S/cddl/dev/fbt ${CDDL_CFLAGS} -I$S/cddl/compat/opensolaris -I$S/cddl/contrib/opensolaris/uts/common  
 .if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "i386"
 FBT_CFLAGS+=	-I$S/cddl/dev/fbt/x86
 .endif
+.if defined(ONLY_CALLGRAPH)
+FBT_C=		${CC} -S -emit-llvm -o ${.TARGET} ${FBT_CFLAGS}		${WERROR} ${.IMPSRC}
+.else
 FBT_C=		${CC} -c ${FBT_CFLAGS}		${WERROR} ${.IMPSRC}
+.endif
 
 .if ${MK_CTF} != "no"
 NORMAL_CTFCONVERT=	${CTFCONVERT} ${CTFFLAGS} ${.TARGET}
@@ -327,7 +374,11 @@ OFEDINCLUDES=	-I$S/ofed/include -I$S/ofed/include/uapi ${LINUXKPI_INCLUDES}
 OFEDNOERR=	-Wno-cast-qual -Wno-pointer-arith
 OFEDCFLAGS=	${CFLAGS:N-I*} -DCONFIG_INFINIBAND_USER_MEM \
 		${OFEDINCLUDES} ${CFLAGS:M-I*} ${OFEDNOERR}
+.if defined(ONLY_CALLGRAPH)
+OFED_C_NOIMP=	${CC} -S -emit-llvm -o ${.TARGET} ${OFEDCFLAGS} ${WERROR}
+.else
 OFED_C_NOIMP=	${CC} -c -o ${.TARGET} ${OFEDCFLAGS} ${WERROR}
+.endif
 OFED_C=		${OFED_C_NOIMP} ${.IMPSRC}
 
 # mlxfw C flags.
@@ -341,7 +392,9 @@ SYSTEM_CFILES= config.c env.c hints.c vnode_if.c
 SYSTEM_DEP= Makefile ${SYSTEM_OBJS}
 SYSTEM_OBJS= locore.o ${MDOBJS} ${OBJS}
 SYSTEM_OBJS+= ${SYSTEM_CFILES:.c=.o}
+.if !defined(ONLY_CALLGRAPH)
 SYSTEM_OBJS+= force-dynamic-hack.pico
+.endif
 
 KEYMAP=kbdcontrol -P ${SRCTOP}/share/vt/keymaps -P ${SRCTOP}/share/syscons/keymaps
 KEYMAP_FIX=sed -e 's/^static keymap_t.* = /static keymap_t key_map = /' -e 's/^static accentmap_t.* = /static accentmap_t accent_map = /'

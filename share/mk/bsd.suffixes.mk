@@ -8,7 +8,7 @@
 	${CTFCONVERT_CMD}
 
 .c.o:
-	${CC} ${STATIC_CFLAGS} ${CFLAGS} -c ${.IMPSRC} -o ${.TARGET}
+	${CC} -emit-llvm -S ${STATIC_CFLAGS} ${CFLAGS} ${.IMPSRC} -o ${.TARGET}
 	${CTFCONVERT_CMD}
 
 .c.bco:

@@ -193,6 +193,9 @@ gdbinit:
 ${FULLKERNEL}: ${SYSTEM_DEP} vers.o
 	@rm -f ${.TARGET}
 	@echo linking ${.TARGET}
+.if defined(ONLY_CALLGRAPH)
+	/usr/local64/bin/llvm-link -S -o ${.TARGET} ${SYSTEM_OBJS}
+.else
 	${SYSTEM_LD}
 .if !empty(MD_ROOT_SIZE_CONFIGURED) && defined(MFS_IMAGE)
 	@sh ${S}/tools/embed_mfs.sh ${.TARGET} ${MFS_IMAGE}
@@ -205,6 +208,7 @@ ${FULLKERNEL}: ${SYSTEM_DEP} vers.o
 	${OBJCOPY} --strip-debug ${.TARGET}
 .endif
 	${SYSTEM_LD_TAIL}
+.endif
 
 OBJS_DEPEND_GUESS+=	offset.inc assym.inc vnode_if.h ${BEFORE_DEPEND:M*.h} \
 			${MFILES:T:S/.m$/.h/}
