@@ -491,7 +491,20 @@ __END_DECLS
 #endif
 
 #ifndef make_rtld_function_pointer
+#ifdef CHERI_LIB_C18N
+#define make_rtld_function_pointer(target_func)				\
+	tramp_intern(NULL, &(struct tramp_data) {			\
+		.target = &target_func,					\
+		.defobj = &obj_rtld,					\
+		.sig = (struct func_sig) {				\
+			.valid = true,					\
+			.reg_args = 0, .mem_args = false,		\
+			.ret_args = NONE				\
+		}							\
+	})
+#else
 #define make_rtld_function_pointer(target_func)	(&target_func)
+#endif
 #endif
 #ifndef make_rtld_local_function_pointer
 #define make_rtld_local_function_pointer(target_func)	(&target_func)
