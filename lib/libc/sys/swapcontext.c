@@ -34,6 +34,9 @@
 #include <errno.h>
 #include <stddef.h>
 #include "libc_private.h"
+#ifdef CHERI_LIB_C18N
+#include <errno.h>
+#endif
 
 __weak_reference(__sys_swapcontext, __swapcontext);
 __sym_compat(swapcontext, __impl_swapcontext, FBSD_1.0);
@@ -44,5 +47,13 @@ __sym_default(swapcontext, swapcontext, FBSD_1.2);
 int
 swapcontext(ucontext_t *oucp, const ucontext_t *ucp)
 {
+#ifdef CHERI_LIB_C18N
+	/*
+	 * Disable this syscall under library-based compartmentalisation.
+	 */
+	errno = ENOSYS;
+	return (-1);
+#else
 	return (INTERPOS_SYS(swapcontext, oucp, ucp));
+#endif
 }

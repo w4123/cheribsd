@@ -32,6 +32,9 @@
 #include <sys/types.h>
 #include <ucontext.h>
 #include "libc_private.h"
+#ifdef CHERI_LIB_C18N
+#include <errno.h>
+#endif
 
 __weak_reference(__sys_setcontext, __setcontext);
 __sym_compat(setcontext, __impl_setcontext, FBSD_1.0);
@@ -42,5 +45,13 @@ __sym_default(setcontext, setcontext, FBSD_1.2);
 int
 setcontext(const ucontext_t *uc)
 {
+#ifdef CHERI_LIB_C18N
+	/*
+	 * Disable this syscall under library-based compartmentalisation.
+	 */
+	errno = ENOSYS;
+	return (-1);
+#else
 	return (INTERPOS_SYS(setcontext, uc));
+#endif
 }
