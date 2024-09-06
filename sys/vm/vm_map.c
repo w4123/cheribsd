@@ -5119,7 +5119,6 @@ vmspace_fork(struct vmspace *vm1, vm_ooffset_t *fork_charge)
 	vm_object_t object;
 	int error, locked __diagused;
 	vm_inherit_t inh;
-	bool strip_cap_perms = false;
 
 	old_map = &vm1->vm_map;
 	/* Copy immutable fields of vm1 to vm2. */
@@ -5174,6 +5173,8 @@ vmspace_fork(struct vmspace *vm1, vm_ooffset_t *fork_charge)
 	    MAP_ASLR_STACK | MAP_RESERVATIONS | MAP_WXORX);
 
 	VM_MAP_ENTRY_FOREACH(old_entry, old_map) {
+		bool strip_cap_perms = false;
+
 		if ((old_entry->eflags & MAP_ENTRY_IS_SUB_MAP) != 0)
 			panic("vm_map_fork: encountered a submap");
 
@@ -5267,7 +5268,6 @@ vmspace_fork(struct vmspace *vm1, vm_ooffset_t *fork_charge)
 			if (strip_cap_perms) {
 				new_entry->protection &= ~VM_PROT_CAP;
 				new_entry->max_protection &= ~VM_PROT_CAP;
-				new_entry->inheritance = VM_INHERIT_SHARE;
 			}
 			new_entry->wiring_thread = NULL;
 			new_entry->wired_count = 0;
@@ -5293,7 +5293,7 @@ vmspace_fork(struct vmspace *vm1, vm_ooffset_t *fork_charge)
 			 * hardware permissions up properly rather than
 			 * blindly copying them.
 			 */
-			if (strip_cap_perms) {
+			if (!strip_cap_perms) {
 				pmap_copy(new_map->pmap, old_map->pmap,
 				    new_entry->start,
 				    (old_entry->end - old_entry->start),
