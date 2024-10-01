@@ -363,6 +363,7 @@ SUBDIR=	\
 	sge \
 	${_sgx} \
 	${_sgx_linux} \
+	sift_sa \
 	siftr \
 	siis \
 	sis \
