@@ -1945,7 +1945,7 @@ linux_recvmsg(struct thread *td, struct linux_recvmsg_args *args)
 	if (error != 0)
 		return (error);
 	fdrop(fp, td);
-	return (linux_recvmsg_common(td, args->s, __USER_CAP_OBJ(args->msg),
+	return (linux_recvmsg_common(td, args->s, __USER_CAP(args->msg, sizeof(struct l_msghdr)),
 	    args->flags, &bsd_msg));
 }
 
