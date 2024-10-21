@@ -224,7 +224,7 @@ linux_sigaltstack(struct thread *td, struct linux_sigaltstack_args *uap)
 	error = kern_sigaltstack(td, (uap->uss != NULL) ? &ss : NULL,
 	    (uap->uoss != NULL) ? &oss : NULL);
 	if (error == 0 && uap->uoss != NULL) {
-		lss.ss_sp = oss.ss_sp;
+		lss.ss_sp = (uintcap_t)oss.ss_sp;
 		lss.ss_size = oss.ss_size;
 		lss.ss_flags = bsd_to_linux_sigaltstack(oss.ss_flags);
 		error = copyout(&lss, __USER_CAP_OBJ(uap->uoss), sizeof(lss));
@@ -714,19 +714,19 @@ siginfo_to_lsiginfo(const siginfo_t *si, l_siginfo_t *lsi, l_int sig)
 
 	case SI_TIMER:
 		lsi->lsi_int = si->si_value.sival_int;
-		lsi->lsi_ptr = PTROUT(si->si_value.sival_ptr);
+		lsi->lsi_ptr = (uintcap_t)(si->si_value.sival_ptr);
 		lsi->lsi_tid = si->si_timerid;
 		break;
 
 	case SI_QUEUE:
 		lsi->lsi_pid = si->si_pid;
 		lsi->lsi_uid = si->si_uid;
-		lsi->lsi_ptr = PTROUT(si->si_value.sival_ptr);
+		lsi->lsi_ptr = (uintcap_t)(si->si_value.sival_ptr);
 		break;
 
 	case SI_ASYNCIO:
 		lsi->lsi_int = si->si_value.sival_int;
-		lsi->lsi_ptr = PTROUT(si->si_value.sival_ptr);
+		lsi->lsi_ptr = (uintcap_t)(si->si_value.sival_ptr);
 		break;
 
 	default:
@@ -753,7 +753,7 @@ siginfo_to_lsiginfo(const siginfo_t *si, l_siginfo_t *lsi, l_int sig)
 		case LINUX_SIGILL:
 		case LINUX_SIGFPE:
 		case LINUX_SIGSEGV:
-			lsi->lsi_addr = PTROUT(si->si_addr);
+			lsi->lsi_addr = (uintcap_t)(si->si_addr);
 			break;
 
 		default:
@@ -761,7 +761,7 @@ siginfo_to_lsiginfo(const siginfo_t *si, l_siginfo_t *lsi, l_int sig)
 			lsi->lsi_uid = si->si_uid;
 			if (sig >= LINUX_SIGRTMIN) {
 				lsi->lsi_int = si->si_value.sival_int;
-				lsi->lsi_ptr = PTROUT(si->si_value.sival_ptr);
+				lsi->lsi_ptr = (uintcap_t)(si->si_value.sival_ptr);
 			}
 			break;
 		}
