@@ -814,11 +814,11 @@ int
 linux_sys_futex(struct thread *td, struct linux_sys_futex_args *args)
 {
 	struct linux_futex_args fargs = {
-		.uaddr = args->uaddr,
+		.uaddr = __USER_CAP_UNBOUND(args->uaddr),
 		.op = args->op,
 		.val = args->val,
 		.ts = NULL,
-		.uaddr2 = args->uaddr2,
+		.uaddr2 = __USER_CAP_UNBOUND(args->uaddr2),
 		.val3 = args->val3,
 		.val3_compare = true,
 	};
@@ -838,8 +838,8 @@ linux_sys_futex(struct thread *td, struct linux_sys_futex_args *args)
 		break;
 	default:
 		// LINUX_FUTEX_CMD is not the four mentioned above
-		// fromcap directly without copying in the timespec
-		fargs.ts = (__cheri_fromcap void *)PTRIN(args->timeout);
+		// copy directly without copying in the timespec
+		fargs.ts = PTRIN(args->timeout);
 	}
 	return (linux_futex(td, &fargs));
 }
@@ -850,11 +850,11 @@ linux_sys_futex_time64(struct thread *td,
     struct linux_sys_futex_time64_args *args)
 {
 	struct linux_futex_args fargs = {
-		.uaddr = args->uaddr,
+		.uaddr = __USER_CAP_UNBOUND(args->uaddr),
 		.op = args->op,
 		.val = args->val,
 		.ts = NULL,
-		.uaddr2 = args->uaddr2,
+		.uaddr2 = __USER_CAP_UNBOUND(args->uaddr2),
 		.val3 = args->val3,
 		.val3_compare = true,
 	};
