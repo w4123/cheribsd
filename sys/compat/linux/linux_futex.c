@@ -930,7 +930,7 @@ linux_get_robust_list(struct thread *td, struct linux_get_robust_list_args *args
 	}
 
 	len = sizeof(struct linux_robust_list_head);
-	error = copyout(&len, args->len, sizeof(l_size_t));
+	error = copyout(&len, __USER_CAP_OBJ(args->len), sizeof(l_size_t));
 	if (error != 0)
 		return (EFAULT);
 
