@@ -1035,7 +1035,7 @@ release_futexes(struct thread *td, struct linux_emuldata *em)
 	if (head == NULL)
 		return;
 
-	if (fetch_robust_entry(&entry, PTRIN(&head->list.next), &pi))
+	if (fetch_robust_entry(&entry, (void * __capability)(&head->list.next), &pi))
 		return;
 
 	error = copyin(&head->futex_offset, &futex_offset,
@@ -1043,11 +1043,11 @@ release_futexes(struct thread *td, struct linux_emuldata *em)
 	if (error != 0)
 		return;
 
-	if (fetch_robust_entry(&pending, PTRIN(&head->pending_list), &pip))
+	if (fetch_robust_entry(&pending, (void * __capability)(&head->pending_list), &pip))
 		return;
 
 	while (entry != &head->list) {
-		error = fetch_robust_entry(&next_entry, PTRIN(&entry->next),
+		error = fetch_robust_entry(&next_entry, (void * __capability)(&entry->next),
 		    &next_pi);
 
 		/*
