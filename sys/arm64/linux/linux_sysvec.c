@@ -97,7 +97,7 @@ static void	linux_vdso_reloc(char *mapping, Elf_Addr offset);
 static void	linux_set_syscall_retval(struct thread *td, int error);
 static int	linux_fetch_syscall_args(struct thread *td);
 static void	linux_exec_setregs(struct thread *td, struct image_params *imgp,
-		    uintptr_t stack);
+		    uintcap_t stack);
 static void	linux_exec_sysvec_init(void *param);
 static int	linux_on_exec_vmspace(struct proc *p,
 		    struct image_params *imgp);
