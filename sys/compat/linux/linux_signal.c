@@ -213,11 +213,11 @@ linux_sigaltstack(struct thread *td, struct linux_sigaltstack_args *uap)
 	LINUX_CTR2(sigaltstack, "%p, %p", uap->uss, uap->uoss);
 
 	if (uap->uss != NULL) {
-		error = copyin(uap->uss, &lss, sizeof(lss));
+		error = copyin(__USER_CAP_OBJ(uap->uss), &lss, sizeof(lss));
 		if (error != 0)
 			return (error);
 
-		ss.ss_sp = PTRIN(lss.ss_sp);
+		ss.ss_sp = __USER_CAP_UNBOUND(lss.ss_sp);
 		ss.ss_size = lss.ss_size;
 		ss.ss_flags = linux_to_bsd_sigaltstack(lss.ss_flags);
 	}
@@ -227,7 +227,7 @@ linux_sigaltstack(struct thread *td, struct linux_sigaltstack_args *uap)
 		lss.ss_sp = PTROUT(oss.ss_sp);
 		lss.ss_size = oss.ss_size;
 		lss.ss_flags = bsd_to_linux_sigaltstack(oss.ss_flags);
-		error = copyout(&lss, uap->uoss, sizeof(lss));
+		error = copyout(&lss, __USER_CAP_OBJ(uap->uoss), sizeof(lss));
 	}
 
 	return (error);
@@ -261,7 +261,7 @@ linux_rt_sigaction(struct thread *td, struct linux_rt_sigaction_args *args)
 		return (EINVAL);
 
 	if (args->act != NULL) {
-		error = copyin(args->act, &nsa, sizeof(nsa));
+		error = copyin(__USER_CAP_OBJ(args->act), &nsa, sizeof(nsa));
 		if (error != 0)
 			return (error);
 	}
@@ -271,7 +271,7 @@ linux_rt_sigaction(struct thread *td, struct linux_rt_sigaction_args *args)
 				   args->oact ? &osa : NULL);
 
 	if (args->oact != NULL && error == 0)
-		error = copyout(&osa, args->oact, sizeof(osa));
+		error = copyout(&osa, __USER_CAP_OBJ(args->oact), sizeof(osa));
 
 	return (error);
 }
@@ -364,7 +364,7 @@ linux_rt_sigprocmask(struct thread *td, struct linux_rt_sigprocmask_args *args)
 		if (KTRPOINT(td, KTR_STRUCT))
 			linux_ktrsigset(&oset, sizeof(oset));
 #endif
-		error = copyout(&oset, args->omask, sizeof(oset));
+		error = copyout(&oset, __USER_CAP_OBJ(args->omask), sizeof(oset));
 	}
 
 	return (error);
@@ -459,7 +459,7 @@ linux_rt_sigpending(struct thread *td, struct linux_rt_sigpending_args *args)
 	if (KTRPOINT(td, KTR_STRUCT))
 		linux_ktrsigset(&lset, sizeof(lset));
 #endif
-	return (copyout(&lset, args->set, args->sigsetsize));
+	return (copyout(&lset, __USER_CAP(args->set, args->sigsetsize), args->sigsetsize));
 }
 
 int
@@ -504,7 +504,7 @@ linux_common_rt_sigtimedwait(struct thread *td, l_sigset_t *mask,
 	if (ptr) {
 		memset(&lsi, 0, sizeof(lsi));
 		siginfo_to_lsiginfo(&ksi.ksi_info, &lsi, sig);
-		error = copyout(&lsi, ptr, sizeof(lsi));
+		error = copyout(&lsi, __USER_CAP_OBJ(ptr), sizeof(lsi));
 	}
 	if (error == 0)
 		td->td_retval[0] = sig;
@@ -801,7 +801,7 @@ lsiginfo_to_siginfo(struct thread *td, const l_siginfo_t *lsi,
 	si->si_signo = sig;
 	si->si_pid = td->td_proc->p_pid;
 	si->si_uid = td->td_ucred->cr_ruid;
-	si->si_value.sival_ptr = PTRIN(lsi->lsi_value.sival_ptr);
+	si->si_value.sival_ptr = __USER_CAP_UNBOUND(lsi->lsi_value.sival_ptr);
 	return (0);
 }
 
@@ -816,7 +816,7 @@ linux_rt_sigqueueinfo(struct thread *td, struct linux_rt_sigqueueinfo_args *args
 	if (!LINUX_SIG_VALID(args->sig))
 		return (EINVAL);
 
-	error = copyin(args->info, &linfo, sizeof(linfo));
+	error = copyin(__USER_CAP_OBJ(args->info), &linfo, sizeof(linfo));
 	if (error != 0)
 		return (error);
 
@@ -844,7 +844,7 @@ linux_rt_tgsigqueueinfo(struct thread *td, struct linux_rt_tgsigqueueinfo_args *
 	if (!LINUX_SIG_VALID(args->sig))
 		return (EINVAL);
 
-	error = copyin(args->uinfo, &linfo, sizeof(linfo));
+	error = copyin(__USER_CAP_OBJ(args->uinfo), &linfo, sizeof(linfo));
 	if (error != 0)
 		return (error);
 
