@@ -2101,13 +2101,13 @@ linux_ioctl_ifname(struct thread *td, struct l_ifreq *uifr)
 	struct l_ifreq ifr;
 	int error, ret;
 
-	error = copyin(uifr, &ifr, sizeof(ifr));
+	error = copyin(__USER_CAP_OBJ(uifr), &ifr, sizeof(ifr));
 	if (error != 0)
 		return (error);
 	ret = ifname_bsd_to_linux_idx(ifr.ifr_index, ifr.ifr_name,
 	    LINUX_IFNAMSIZ);
 	if (ret > 0)
-		return (copyout(&ifr, uifr, sizeof(ifr)));
+		return (copyout(&ifr, __USER_CAP_OBJ(uifr), sizeof(ifr)));
 	else
 		return (ENODEV);
 }
@@ -2188,7 +2188,7 @@ linux_ifconf(struct thread *td, struct ifconf *uifc)
 	struct sbuf *sb;
 	int error, full;
 
-	error = copyin(uifc, &ifc, sizeof(ifc));
+	error = copyin(__USER_CAP_OBJ(uifc), &ifc, sizeof(ifc));
 	if (error != 0)
 		return (error);
 
@@ -2198,7 +2198,7 @@ linux_ifconf(struct thread *td, struct ifconf *uifc)
 		NET_EPOCH_ENTER(et);
 		if_foreach(linux_ifconf_ifnet_cb, &ifc);
 		NET_EPOCH_EXIT(et);
-		return (copyout(&ifc, uifc, sizeof(ifc)));
+		return (copyout(&ifc, __USER_CAP_OBJ(uifc), sizeof(ifc)));
 	}
 	if (ifc.ifc_len <= 0)
 		return (EINVAL);
@@ -2227,9 +2227,9 @@ again:
 
 	ifc.ifc_len = cbs.valid_len;
 	sbuf_finish(sb);
-	error = copyout(sbuf_data(sb), PTRIN(ifc.ifc_buf), ifc.ifc_len);
+	error = copyout(sbuf_data(sb), __USER_CAP(ifc.ifc_buf, ifc.ifc_len), ifc.ifc_len);
 	if (error == 0)
-		error = copyout(&ifc, uifc, sizeof(ifc));
+		error = copyout(&ifc, __USER_CAP_OBJ(uifc), sizeof(ifc));
 	sbuf_delete(sb);
 
 	return (error);
@@ -2301,7 +2301,7 @@ linux_ioctl_socket_ifreq(struct thread *td, int fd, u_int cmd,
 		return (ENOIOCTL);
 	}
 
-	error = copyin(uifr, &lifr, sizeof(lifr));
+	error = copyin(__USER_CAP_OBJ(uifr), &lifr, sizeof(lifr));
 	if (error != 0)
 		return (error);
 	bzero(&bifr, sizeof(bifr));
@@ -2365,7 +2365,7 @@ linux_ioctl_socket_ifreq(struct thread *td, int fd, u_int cmd,
 		break;
 	}
 
-	return (copyout(&lifr, uifr, sizeof(lifr)));
+	return (copyout(&lifr, __USER_CAP_OBJ(uifr), sizeof(lifr)));
 }
 
 /*

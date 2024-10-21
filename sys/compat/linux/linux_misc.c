@@ -1541,7 +1541,7 @@ linux_sethostname(struct thread *td, struct linux_sethostname_args *args)
 
 	name[0] = CTL_KERN;
 	name[1] = KERN_HOSTNAME;
-	return (userland_sysctl(td, name, 2, 0, 0, 0, args->hostname,
+	return (userland_sysctl(td, name, 2, 0, 0, 0, __USER_CAP(args->hostname, args->len),
 	    args->len, 0, 0));
 }
 
@@ -1552,7 +1552,7 @@ linux_setdomainname(struct thread *td, struct linux_setdomainname_args *args)
 
 	name[0] = CTL_KERN;
 	name[1] = KERN_NISDOMAINNAME;
-	return (userland_sysctl(td, name, 2, 0, 0, 0, args->name,
+	return (userland_sysctl(td, name, 2, 0, 0, 0, __USER_CAP(args->name, args->len),
 	    args->len, 0, 0));
 }
 
@@ -2536,14 +2536,14 @@ linux_syslog(struct thread *td, struct linux_syslog_args *args)
 			if (*src == '\0')
 				continue;
 
-			if (dst >= args->buf + args->len)
+			if ((__cheri_addr char*)dst >= args->buf + args->len)
 				goto out;
 
 			error = copyout(src, dst, 1);
 			dst++;
 
 			if (*src == '\n' && *(src + 1) != '<' &&
-			    dst + sizeof(SYSLOG_TAG) < args->buf + args->len) {
+			    (__cheri_addr char*)dst + sizeof(SYSLOG_TAG) < args->buf + args->len) {
 				error = copyout(&SYSLOG_TAG,
 				    dst, sizeof(SYSLOG_TAG));
 				dst += sizeof(SYSLOG_TAG) - 1;
@@ -2551,7 +2551,7 @@ linux_syslog(struct thread *td, struct linux_syslog_args *args)
 		}
 	}
 out:
-	td->td_retval[0] = dst - args->buf;
+	td->td_retval[0] = (__cheri_addr char*)dst - args->buf;
 	return (error);
 }
 
@@ -3030,7 +3030,7 @@ linux_mq_open(struct thread *td, struct linux_mq_open_args *args)
 		attr.mq_flags = L2B_MQ_FLAGS(attr.mq_flags);
 	}
 
-	return (kern_kmq_open(td, args->name, flags, args->mode,
+	return (kern_kmq_open(td, __USER_CAP_STR(args->name), flags, args->mode,
 	    args->attr != NULL ? &attr : NULL));
 }
 
@@ -3038,7 +3038,7 @@ int
 linux_mq_unlink(struct thread *td, struct linux_mq_unlink_args *args)
 {
 	struct kmq_unlink_args bsd_args = {
-		.path = PTRIN(args->name)
+		.path = __USER_CAP_STR(args->name)
 	};
 
 	return (sys_kmq_unlink(td, &bsd_args));
@@ -3059,7 +3059,7 @@ linux_mq_timedsend(struct thread *td, struct linux_mq_timedsend_args *args)
 		abs_timeout = &ts;
 	}
 
-	return (kern_kmq_timedsend(td, args->mqd, PTRIN(args->msg_ptr),
+	return (kern_kmq_timedsend(td, args->mqd, __USER_CAP(args->msg_ptr, args->msg_len),
 		args->msg_len, args->msg_prio, abs_timeout));
 }
 
@@ -3078,7 +3078,7 @@ linux_mq_timedreceive(struct thread *td, struct linux_mq_timedreceive_args *args
 		abs_timeout = &ts;
 	}
 
-	return (kern_kmq_timedreceive(td, args->mqd, PTRIN(args->msg_ptr),
+	return (kern_kmq_timedreceive(td, args->mqd, __USER_CAP(args->msg_ptr, args->msg_len),
 		args->msg_len, args->msg_prio, abs_timeout));
 }
 
