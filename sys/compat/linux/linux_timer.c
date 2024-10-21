@@ -54,7 +54,7 @@ linux_convert_l_sigevent(const struct l_sigevent *l_sig, struct sigevent *sig)
 			return (EINVAL);
 		sig->sigev_notify = SIGEV_SIGNAL;
 		sig->sigev_signo = linux_to_bsd_signal(l_sig->sigev_signo);
-		PTRIN_CP(*l_sig, *sig, sigev_value.sival_ptr);
+		sig->sigev_value.sival_ptr = __USER_CAP_UNBOUND(l_sig->sigev_value.sival_ptr);
 		break;
 	case L_SIGEV_NONE:
 		sig->sigev_notify = SIGEV_NONE;
@@ -73,7 +73,7 @@ linux_convert_l_sigevent(const struct l_sigevent *l_sig, struct sigevent *sig)
 		sig->sigev_notify = SIGEV_THREAD_ID;
 		CP2(*l_sig, *sig, _l_sigev_un._tid, sigev_notify_thread_id);
 		sig->sigev_signo = linux_to_bsd_signal(l_sig->sigev_signo);
-		PTRIN_CP(*l_sig, *sig, sigev_value.sival_ptr);
+		sig->sigev_value.sival_ptr = __USER_CAP_UNBOUND(l_sig->sigev_value.sival_ptr);
 		break;
 	default:
 		return (EINVAL);
