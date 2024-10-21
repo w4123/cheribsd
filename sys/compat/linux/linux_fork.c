@@ -454,8 +454,8 @@ linux_clone3(struct thread *td, struct linux_clone3_args *args)
 		goto out;
 	ca = malloc(sizeof(*ca), M_LINUX, M_WAITOK | M_ZERO);
 	ca->flags = uca->flags;
-	ca->child_tid = __USER_CAP_OBJ((l_int *)(uca->child_tid));
-	ca->parent_tid = __USER_CAP_OBJ((l_int *)(uca->parent_tid));
+	ca->child_tid = __USER_CAP(ca->child_tid, sizeof(l_int));
+	ca->parent_tid = __USER_CAP(ca->parent_tid, sizeof(l_int));
 	ca->exit_signal = uca->exit_signal;
 	ca->stack = uca->stack + uca->stack_size;
 	ca->stack_size = uca->stack_size;
