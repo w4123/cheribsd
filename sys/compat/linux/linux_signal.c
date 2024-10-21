@@ -224,7 +224,7 @@ linux_sigaltstack(struct thread *td, struct linux_sigaltstack_args *uap)
 	error = kern_sigaltstack(td, (uap->uss != NULL) ? &ss : NULL,
 	    (uap->uoss != NULL) ? &oss : NULL);
 	if (error == 0 && uap->uoss != NULL) {
-		lss.ss_sp = PTROUT(oss.ss_sp);
+		lss.ss_sp = oss.ss_sp;
 		lss.ss_size = oss.ss_size;
 		lss.ss_flags = bsd_to_linux_sigaltstack(oss.ss_flags);
 		error = copyout(&lss, __USER_CAP_OBJ(uap->uoss), sizeof(lss));
