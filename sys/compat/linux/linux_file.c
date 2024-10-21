@@ -51,6 +51,8 @@
 #include <machine/../linux32/linux.h>
 #include <machine/../linux32/linux32_proto.h>
 #else
+#include <compat/freebsd64/freebsd64.h>
+#include <compat/freebsd64/freebsd64_util.h>
 #include <machine/../linux/linux.h>
 #include <machine/../linux/linux_proto.h>
 #endif
@@ -859,7 +861,7 @@ linux_readlinkat(struct thread *td, struct linux_readlinkat_args *args)
 		return (EINVAL);
 
 	dfd = (args->dfd == LINUX_AT_FDCWD) ? AT_FDCWD : args->dfd;
-	return (kern_readlinkat(td, dfd, args->path, UIO_USERSPACE,
+	return (kern_readlinkat(td, dfd, __USER_CAP_PATH(args->path), UIO_USERSPACE,
 	    __USER_CAP(args->buf, args->bufsiz), UIO_USERSPACE, args->bufsiz));
 }
 
@@ -1017,7 +1019,6 @@ pos_from_hilo(unsigned long high, unsigned long low)
 	return (((off_t)high << HALF_LONG_BITS) << HALF_LONG_BITS) | low;
 }
 
-// TODO: IOV
 int
 linux_preadv(struct thread *td, struct linux_preadv_args *uap)
 {
@@ -1036,7 +1037,7 @@ linux_preadv(struct thread *td, struct linux_preadv_args *uap)
 #ifdef COMPAT_LINUX32
 	error = freebsd32_copyinuio(PTRIN(uap->vec), uap->vlen, &auio);
 #else
-	error = copyinuio(uap->vec, uap->vlen, &auio);
+	error = freebsd64_copyinuio(__USER_CAP_ARRAY(((struct iovec64*)uap->vec), uap->vlen), uap->vlen, &auio);
 #endif
 	if (error != 0)
 		return (error);
@@ -1063,7 +1064,7 @@ linux_pwritev(struct thread *td, struct linux_pwritev_args *uap)
 #ifdef COMPAT_LINUX32
 	error = freebsd32_copyinuio(PTRIN(uap->vec), uap->vlen, &auio);
 #else
-	error = copyinuio(uap->vec, uap->vlen, &auio);
+	error = freebsd64_copyinuio(__USER_CAP_ARRAY(((struct iovec64*)uap->vec), uap->vlen), uap->vlen, &auio);
 #endif
 	if (error != 0)
 		return (error);
@@ -1870,7 +1871,7 @@ linux_writev(struct thread *td, struct linux_writev_args *args)
 #ifdef COMPAT_LINUX32
 	error = freebsd32_copyinuio(PTRIN(args->iovp), args->iovcnt, &auio);
 #else
-	error = copyinuio(args->iovp, args->iovcnt, &auio);
+	error = freebsd64_copyinuio(__USER_CAP_ARRAY(((struct iovec64*)args->iovp), args->iovcnt), args->iovcnt, &auio);
 #endif
 	if (error != 0)
 		return (error);
