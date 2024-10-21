@@ -2536,14 +2536,14 @@ linux_syslog(struct thread *td, struct linux_syslog_args *args)
 			if (*src == '\0')
 				continue;
 
-			if ((__cheri_addr char*)dst >= args->buf + args->len)
+			if ((__cheri_addr ptraddr_t)dst >= args->buf + args->len)
 				goto out;
 
 			error = copyout(src, dst, 1);
 			dst++;
 
 			if (*src == '\n' && *(src + 1) != '<' &&
-			    (__cheri_addr char*)dst + sizeof(SYSLOG_TAG) < args->buf + args->len) {
+			    (__cheri_addr ptraddr_t)dst + sizeof(SYSLOG_TAG) < args->buf + args->len) {
 				error = copyout(&SYSLOG_TAG,
 				    dst, sizeof(SYSLOG_TAG));
 				dst += sizeof(SYSLOG_TAG) - 1;
@@ -2551,7 +2551,7 @@ linux_syslog(struct thread *td, struct linux_syslog_args *args)
 		}
 	}
 out:
-	td->td_retval[0] = (__cheri_addr char*)dst - args->buf;
+	td->td_retval[0] = (__cheri_addr ptraddr_t)dst - args->buf;
 	return (error);
 }
 
