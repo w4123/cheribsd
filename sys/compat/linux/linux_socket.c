@@ -61,6 +61,7 @@
 #include <machine/../linux32/linux.h>
 #include <machine/../linux32/linux32_proto.h>
 #else
+#include <compat/freebsd64/freebsd64.h>
 #include <machine/../linux/linux.h>
 #include <machine/../linux/linux_proto.h>
 #endif
@@ -702,6 +703,7 @@ linux_to_bsd_msghdr(struct msghdr *bhdr, const struct l_msghdr *lhdr)
 
 	bhdr->msg_name		= __USER_CAP(lhdr->msg_name, lhdr->msg_namelen);
 	bhdr->msg_namelen	= lhdr->msg_namelen;
+	// TODO: May be wrong due to incompatible types
 	bhdr->msg_iov		= __USER_CAP(lhdr->msg_iov, lhdr->msg_iovlen * sizeof(iovec64));
 	bhdr->msg_iovlen	= lhdr->msg_iovlen;
 	// TODO: Check
@@ -1081,7 +1083,7 @@ linux_accept_common(struct thread *td, int s, l_uintptr_t addr,
 		    __USER_CAP(addr, len), len);
 		if (error == 0) {
 			len = ss.ss_len;
-			error = copyout(&len, __USER_CAP(args->namelen, sizeof(len)), sizeof(len));
+			error = copyout(&len, __USER_CAP(namelen, sizeof(len)), sizeof(len));
 		}
 		if (error != 0) {
 			fdclose(td, fp, td->td_retval[0]);
