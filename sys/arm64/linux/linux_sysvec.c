@@ -162,7 +162,7 @@ linux64_arch_copyout_auxargs(struct image_params *imgp, Elf_Auxinfo **pos)
  */
 static void
 linux_exec_setregs(struct thread *td, struct image_params *imgp,
-    uintptr_t stack)
+    uintcap_t stack)
 {
 	struct trapframe *regs = td->td_frame;
 	struct pcb *pcb = td->td_pcb;
