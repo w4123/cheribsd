@@ -484,14 +484,14 @@ linux_ptrace(struct thread *td, struct linux_ptrace_args *uap)
 		break;
 	case LINUX_PTRACE_POKETEXT:
 	case LINUX_PTRACE_POKEDATA:
-		error = kern_ptrace(td, PT_WRITE_D, pid, addr, uap->data);
+		error = kern_ptrace(td, PT_WRITE_D, pid, __USER_CAP_UNBOUND(addr), uap->data);
 		if (error != 0)
 			goto out;
 		/*
 		 * Linux expects this syscall to write 64 bits, not 32.
 		 */
 		error = kern_ptrace(td, PT_WRITE_D, pid,
-		    (void *)(uap->addr + 4), uap->data >> 32);
+		    __USER_CAP_UNBOUND(uap->addr + 4), uap->data >> 32);
 		break;
 	case LINUX_PTRACE_POKEUSER:
 		error = linux_ptrace_pokeuser(td, pid, addr, (void *)uap->data);
@@ -500,16 +500,16 @@ linux_ptrace(struct thread *td, struct linux_ptrace_args *uap)
 		error = map_signum(uap->data, &sig);
 		if (error != 0)
 			break;
-		error = kern_ptrace(td, PT_CONTINUE, pid, (void *)1, sig);
+		error = kern_ptrace(td, PT_CONTINUE, pid, __USER_CAP_UNBOUND(1), sig);
 		break;
 	case LINUX_PTRACE_KILL:
-		error = kern_ptrace(td, PT_KILL, pid, addr, uap->data);
+		error = kern_ptrace(td, PT_KILL, pid, __USER_CAP_UNBOUND(addr), uap->data);
 		break;
 	case LINUX_PTRACE_SINGLESTEP:
 		error = map_signum(uap->data, &sig);
 		if (error != 0)
 			break;
-		error = kern_ptrace(td, PT_STEP, pid, (void *)1, sig);
+		error = kern_ptrace(td, PT_STEP, pid, __USER_CAP_UNBOUND(1), sig);
 		break;
 	case LINUX_PTRACE_GETREGS:
 		error = linux_ptrace_getregs(td, pid, (void *)uap->data);
@@ -518,19 +518,19 @@ linux_ptrace(struct thread *td, struct linux_ptrace_args *uap)
 		error = linux_ptrace_setregs(td, pid, (void *)uap->data);
 		break;
 	case LINUX_PTRACE_ATTACH:
-		error = kern_ptrace(td, PT_ATTACH, pid, addr, uap->data);
+		error = kern_ptrace(td, PT_ATTACH, pid, __USER_CAP_UNBOUND(addr), uap->data);
 		break;
 	case LINUX_PTRACE_DETACH:
 		error = map_signum(uap->data, &sig);
 		if (error != 0)
 			break;
-		error = kern_ptrace(td, PT_DETACH, pid, (void *)1, sig);
+		error = kern_ptrace(td, PT_DETACH, pid, __USER_CAP_UNBOUND(1), sig);
 		break;
 	case LINUX_PTRACE_SYSCALL:
 		error = map_signum(uap->data, &sig);
 		if (error != 0)
 			break;
-		error = kern_ptrace(td, PT_SYSCALL, pid, (void *)1, sig);
+		error = kern_ptrace(td, PT_SYSCALL, pid, __USER_CAP_UNBOUND(1), sig);
 		break;
 	case LINUX_PTRACE_SETOPTIONS:
 		error = linux_ptrace_setoptions(td, pid, uap->data);
