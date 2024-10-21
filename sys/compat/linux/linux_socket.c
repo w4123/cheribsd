@@ -700,11 +700,12 @@ linux_to_bsd_msghdr(struct msghdr *bhdr, const struct l_msghdr *lhdr)
 	if (lhdr->msg_controllen > INT_MAX)
 		return (ENOBUFS);
 
-	bhdr->msg_name		= PTRIN(lhdr->msg_name);
+	bhdr->msg_name		= __USER_CAP(lhdr->msg_name, lhdr->msg_namelen);
 	bhdr->msg_namelen	= lhdr->msg_namelen;
-	bhdr->msg_iov		= PTRIN(lhdr->msg_iov);
+	bhdr->msg_iov		= __USER_CAP(lhdr->msg_iov, lhdr->msg_iovlen * sizeof(iovec64));
 	bhdr->msg_iovlen	= lhdr->msg_iovlen;
-	bhdr->msg_control	= PTRIN(lhdr->msg_control);
+	// TODO: Check
+	bhdr->msg_control	= __USER_CAP_UNBOUND(lhdr->msg_control);
 
 	/*
 	 * msg_controllen is skipped since BSD and LINUX control messages
@@ -722,11 +723,11 @@ linux_to_bsd_msghdr(struct msghdr *bhdr, const struct l_msghdr *lhdr)
 static int
 bsd_to_linux_msghdr(const struct msghdr *bhdr, struct l_msghdr *lhdr)
 {
-	lhdr->msg_name		= PTROUT(bhdr->msg_name);
+	lhdr->msg_name		= (uintcap_t)(bhdr->msg_name);
 	lhdr->msg_namelen	= bhdr->msg_namelen;
-	lhdr->msg_iov		= PTROUT(bhdr->msg_iov);
+	lhdr->msg_iov		= (uintcap_t)(bhdr->msg_iov);
 	lhdr->msg_iovlen	= bhdr->msg_iovlen;
-	lhdr->msg_control	= PTROUT(bhdr->msg_control);
+	lhdr->msg_control	= (uintcap_t)(bhdr->msg_control);
 
 	/*
 	 * msg_controllen is skipped since BSD and LINUX control messages
@@ -774,12 +775,12 @@ static int
 linux_sendit(struct thread *td, int s, struct msghdr *mp, int flags,
     struct mbuf *control, enum uio_seg segflg)
 {
-	struct sockaddr * __capability to;
+	struct sockaddr *to;
 	int error, len;
 
 	if (mp->msg_name != NULL) {
 		len = mp->msg_namelen;
-		error = linux_to_bsd_sockaddr(mp->msg_name, &to, &len);
+		error = linux_to_bsd_sockaddr(__USER_CAP(mp->msg_name, len), &to, &len);
 		if (error != 0)
 			return (error);
 		mp->msg_name = to;
@@ -837,7 +838,7 @@ linux_sendto_hdrincl(struct thread *td, struct linux_sendto_args *linux_args)
 	packet = (struct ip *)malloc(linux_args->len, M_LINUX, M_WAITOK);
 
 	/* Make kernel copy of the packet to be sent */
-	if ((error = copyin(PTRIN(linux_args->msg), packet,
+	if ((error = copyin(__USER_CAP(linux_args->msg, linux_args->len), packet,
 	    linux_args->len)))
 		goto goout;
 
@@ -846,7 +847,7 @@ linux_sendto_hdrincl(struct thread *td, struct linux_sendto_args *linux_args)
 	packet->ip_off = ntohs(packet->ip_off);
 
 	/* Prepare the msghdr and iovec structures describing the new packet */
-	msg.msg_name = PTRIN(linux_args->to);
+	msg.msg_name = __USER_CAP(linux_args->to, linux_args->tolen);
 	msg.msg_namelen = linux_args->tolen;
 	msg.msg_iov = aiov;
 	msg.msg_iovlen = 1;
@@ -956,7 +957,7 @@ linux_bind(struct thread *td, struct linux_bind_args *args)
 	struct sockaddr *sa;
 	int error;
 
-	error = linux_to_bsd_sockaddr(PTRIN(args->name), &sa,
+	error = linux_to_bsd_sockaddr(__USER_CAP(args->name, args->namelen), &sa,
 	    &args->namelen);
 	if (error != 0)
 		return (error);
@@ -978,7 +979,7 @@ linux_connect(struct thread *td, struct linux_connect_args *args)
 	struct file *fp;
 	int error;
 
-	error = linux_to_bsd_sockaddr(PTRIN(args->name), &sa,
+	error = linux_to_bsd_sockaddr(__USER_CAP(args->name, args->namelen), &sa,
 	    &args->namelen);
 	if (error != 0)
 		return (error);
@@ -1036,7 +1037,7 @@ linux_accept_common(struct thread *td, int s, l_uintptr_t addr,
 		return (error);
 
 	if (PTRIN(addr) != NULL) {
-		error = copyin(PTRIN(namelen), &len, sizeof(len));
+		error = copyin(__USER_CAP(namelen, sizeof(len)), &len, sizeof(len));
 		if (error != 0)
 			return (error);
 		if (len < 0)
@@ -1077,10 +1078,10 @@ linux_accept_common(struct thread *td, int s, l_uintptr_t addr,
 	if (PTRIN(addr) != NULL) {
 		len = min(ss.ss_len, len);
 		error = linux_copyout_sockaddr((struct sockaddr *)&ss,
-		    PTRIN(addr), len);
+		    __USER_CAP(addr, len), len);
 		if (error == 0) {
 			len = ss.ss_len;
-			error = copyout(&len, PTRIN(namelen), sizeof(len));
+			error = copyout(&len, __USER_CAP(args->namelen, sizeof(len)), sizeof(len));
 		}
 		if (error != 0) {
 			fdclose(td, fp, td->td_retval[0]);
@@ -1115,7 +1116,7 @@ linux_getsockname(struct thread *td, struct linux_getsockname_args *args)
 	socklen_t len;
 	int error;
 
-	error = copyin(PTRIN(args->namelen), &len, sizeof(len));
+	error = copyin(__USER_CAP(args->namelen, sizeof(len)), &len, sizeof(len));
 	if (error != 0)
 		return (error);
 
@@ -1125,10 +1126,10 @@ linux_getsockname(struct thread *td, struct linux_getsockname_args *args)
 
 	len = min(ss.ss_len, len);
 	error = linux_copyout_sockaddr((struct sockaddr *)&ss,
-	    PTRIN(args->addr), len);
+	    __USER_CAP(args->addr, len), len);
 	if (error == 0) {
 		len = ss.ss_len;
-		error = copyout(&len, PTRIN(args->namelen), sizeof(len));
+		error = copyout(&len, __USER_CAP(args->namelen, sizeof(len)), sizeof(len));
 	}
 	return (error);
 }
@@ -1140,7 +1141,7 @@ linux_getpeername(struct thread *td, struct linux_getpeername_args *args)
 	socklen_t len;
 	int error;
 
-	error = copyin(PTRIN(args->namelen), &len, sizeof(len));
+	error = copyin(__USER_CAP(args->namelen, sizeof(len)), &len, sizeof(len));
 	if (error != 0)
 		return (error);
 
@@ -1150,10 +1151,10 @@ linux_getpeername(struct thread *td, struct linux_getpeername_args *args)
 
 	len = min(ss.ss_len, len);
 	error = linux_copyout_sockaddr((struct sockaddr *)&ss,
-	    PTRIN(args->addr), len);
+	    __USER_CAP(args->addr, len), len);
 	if (error == 0) {
 		len = ss.ss_len;
-		error = copyout(&len, PTRIN(args->namelen), sizeof(len));
+		error = copyout(&len, __USER_CAP(args->namelen, sizeof(len)), sizeof(len));
 	}
 	return (error);
 }
@@ -1185,7 +1186,7 @@ linux_socketpair(struct thread *td, struct linux_socketpair_args *args)
 	error = kern_socketpair(td, domain, type, 0, sv);
 	if (error != 0)
                 return (error);
-        error = copyout(sv, PTRIN(args->rsv), 2 * sizeof(int));
+        error = copyout(sv, __USER_CAP(args->rsv, 2 * sizeof(int)), 2 * sizeof(int));
         if (error != 0) {
                 (void)kern_close(td, sv[0]);
                 (void)kern_close(td, sv[1]);

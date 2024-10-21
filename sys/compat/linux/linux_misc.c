@@ -3079,7 +3079,7 @@ linux_mq_timedreceive(struct thread *td, struct linux_mq_timedreceive_args *args
 	}
 
 	return (kern_kmq_timedreceive(td, args->mqd, __USER_CAP(args->msg_ptr, args->msg_len),
-		args->msg_len, args->msg_prio, abs_timeout));
+		args->msg_len, __USER_CAP_OBJ(args->msg_prio), abs_timeout));
 }
 
 int
