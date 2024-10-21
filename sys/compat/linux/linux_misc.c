@@ -916,13 +916,13 @@ linux_mknodat(struct thread *td, struct linux_mknodat_args *args)
 	switch (args->mode & S_IFMT) {
 	case S_IFIFO:
 	case S_IFSOCK:
-		error = kern_mkfifoat(td, dfd, args->filename, UIO_USERSPACE,
+		error = kern_mkfifoat(td, dfd, __USER_CAP_PATH(args->filename), UIO_USERSPACE,
 		    args->mode);
 		break;
 
 	case S_IFCHR:
 	case S_IFBLK:
-		error = kern_mknodat(td, dfd, args->filename, UIO_USERSPACE,
+		error = kern_mknodat(td, dfd, __USER_CAP_PATH(args->filename), UIO_USERSPACE,
 		    args->mode, linux_decode_dev(args->dev));
 		break;
 
@@ -934,7 +934,7 @@ linux_mknodat(struct thread *td, struct linux_mknodat_args *args)
 		args->mode |= S_IFREG;
 		/* FALLTHROUGH */
 	case S_IFREG:
-		error = kern_openat(td, dfd, args->filename, UIO_USERSPACE,
+		error = kern_openat(td, dfd, __USER_CAP_PATH(args->filename), UIO_USERSPACE,
 		    O_WRONLY | O_CREAT | O_TRUNC, args->mode);
 		if (error == 0)
 			kern_close(td, td->td_retval[0]);

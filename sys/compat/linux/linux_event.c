@@ -294,7 +294,7 @@ linux_epoll_ctl(struct thread *td, struct linux_epoll_ctl_args *args)
 	int error;
 
 	if (args->op != LINUX_EPOLL_CTL_DEL) {
-		error = copyin(args->event, &le, sizeof(le));
+		error = copyin(__USER_CAP_OBJ(args->event), &le, sizeof(le));
 		if (error != 0)
 			return (error);
 	}

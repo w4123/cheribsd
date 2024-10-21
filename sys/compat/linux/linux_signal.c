@@ -956,7 +956,7 @@ linux_psignal(struct thread *td, int pid, int sig)
 }
 
 int
-linux_copyin_sigset(struct thread *td, l_sigset_t * __capability lset,
+linux_copyin_sigset(struct thread *td, l_sigset_t *lset,
     l_size_t sigsetsize, sigset_t *set, sigset_t **pset)
 {
 	l_sigset_t lmask;
@@ -965,7 +965,7 @@ linux_copyin_sigset(struct thread *td, l_sigset_t * __capability lset,
 	if (sigsetsize != sizeof(l_sigset_t))
 		return (EINVAL);
 	if (lset != NULL) {
-		error = copyin(lset, &lmask, sizeof(lmask));
+		error = copyin(__USER_CAP_OBJ(lset), &lmask, sizeof(lmask));
 		if (error != 0)
 			return (error);
 		linux_to_bsd_sigset(&lmask, set);
