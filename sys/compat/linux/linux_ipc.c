@@ -616,7 +616,7 @@ linux_semctl(struct thread *td, struct linux_semctl_args *args)
 		linux_seminfo.semaem = used_sems;
 */
 		error = copyout(&linux_seminfo,
-		    PTRIN(args->arg.buf), sizeof(linux_seminfo));
+		    __USER_CAP(args->arg.buf, sizeof(linux_seminfo)), sizeof(linux_seminfo));
 		if (error != 0)
 			return (error);
 		/*
@@ -651,7 +651,7 @@ linux_msgsnd(struct thread *td, struct linux_msgsnd_args *args)
 
 	if ((l_long)args->msgsz < 0 || args->msgsz > (l_long)msginfo.msgmax)
 		return (EINVAL);
-	msgp = PTRIN(args->msgp);
+	msgp = __USER_CAP(args->msgp, sizeof(lmtype) + args->msgsz);
 	if ((error = copyin(msgp, &lmtype, sizeof(lmtype))) != 0)
 		return (error);
 	mtype = (long)lmtype;
@@ -670,7 +670,7 @@ linux_msgrcv(struct thread *td, struct linux_msgrcv_args *args)
 
 	if ((l_long)args->msgsz < 0 || args->msgsz > (l_long)msginfo.msgmax)
 		return (EINVAL);
-	msgp = PTRIN(args->msgp);
+	msgp = __USER_CAP(args->msgp, sizeof(lmtype) + args->msgsz);
 	if ((error = kern_msgrcv(td, args->msqid,
 	    (char * __capability)msgp + sizeof(lmtype), args->msgsz,
 	    args->msgtyp, args->msgflg, &mtype)) != 0)
@@ -719,7 +719,7 @@ linux_msgctl(struct thread *td, struct linux_msgctl_args *args)
 		linux_msginfo.msgssz = msginfo.msgssz;
 		linux_msginfo.msgtql = msginfo.msgtql;	/* XXX MSG_INFO. */
 		linux_msginfo.msgseg = msginfo.msgseg;
-		error = copyout(&linux_msginfo, PTRIN(args->buf),
+		error = copyout(&linux_msginfo, __USER_CAP(args->buf, sizeof(linux_msginfo)),
 		    sizeof(linux_msginfo));
 		if (error == 0)
 		    td->td_retval[0] = msginfo.msgmni;	/* XXX */
@@ -843,7 +843,7 @@ linux_shmctl(struct thread *td, struct linux_shmctl_args *args)
 
 		bsd_to_linux_shm_info(&bsd_shm_info, &linux_shm_info);
 
-		return (copyout(&linux_shm_info, PTRIN(args->buf),
+		return (copyout(&linux_shm_info, __USER_CAP(args->buf, sizeof(struct l_shm_info)),
 		    sizeof(struct l_shm_info)));
 	}
 
