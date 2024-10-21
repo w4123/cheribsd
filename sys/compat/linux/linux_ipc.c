@@ -293,15 +293,15 @@ linux_ipc64_perm_to_ipc_perm(struct l_ipc64_perm *in, struct l_ipc_perm *out)
 }
 
 static int
-linux_msqid_pullup(l_int ver, struct l_msqid64_ds *linux_msqid64, void * __capability uaddr)
+linux_msqid_pullup(l_int ver, struct l_msqid64_ds *linux_msqid64, void *uaddr)
 {
 	struct l_msqid_ds linux_msqid;
 	int error;
 
 	if (ver == LINUX_IPC_64 || SV_CURPROC_FLAG(SV_LP64))
-		return (copyin(uaddr, linux_msqid64, sizeof(*linux_msqid64)));
+		return (copyin(__USER_CAP(uaddr, sizeof(*linux_msqid64)), linux_msqid64, sizeof(*linux_msqid64)));
 
-	error = copyin(uaddr, &linux_msqid, sizeof(linux_msqid));
+	error = copyin(__USER_CAP(uaddr, sizeof(linux_msqid)), &linux_msqid, sizeof(linux_msqid));
 	if (error != 0)
 		return (error);
 
@@ -317,13 +317,13 @@ linux_msqid_pullup(l_int ver, struct l_msqid64_ds *linux_msqid64, void * __capab
 }
 
 static int
-linux_msqid_pushdown(l_int ver, struct l_msqid64_ds *linux_msqid64, void * __capability uaddr)
+linux_msqid_pushdown(l_int ver, struct l_msqid64_ds *linux_msqid64, void *uaddr)
 {
 	struct l_msqid_ds linux_msqid;
 	int error;
 
 	if (ver == LINUX_IPC_64 || SV_CURPROC_FLAG(SV_LP64))
-		return (copyout(linux_msqid64, uaddr, sizeof(*linux_msqid64)));
+		return (copyout(linux_msqid64, __USER_CAP(uaddr, sizeof(*linux_msqid64)), sizeof(*linux_msqid64)));
 
 	bzero(&linux_msqid, sizeof(linux_msqid));
 	error = linux_ipc64_perm_to_ipc_perm(&linux_msqid64->msg_perm,
@@ -357,18 +357,18 @@ linux_msqid_pushdown(l_int ver, struct l_msqid64_ds *linux_msqid64, void * __cap
 	    linux_msqid.msg_rtime != linux_msqid64->msg_rtime ||
 	    linux_msqid.msg_ctime != linux_msqid64->msg_ctime)
 		return (EOVERFLOW);
-	return (copyout(&linux_msqid, uaddr, sizeof(linux_msqid)));
+	return (copyout(&linux_msqid, __USER_CAP(uaddr, sizeof(linux_msqid)), sizeof(linux_msqid)));
 }
 
 static int
-linux_semid_pullup(l_int ver, struct l_semid64_ds *linux_semid64, void * __capability uaddr)
+linux_semid_pullup(l_int ver, struct l_semid64_ds *linux_semid64, void *uaddr)
 {
 	struct l_semid_ds linux_semid;
 	int error;
 
 	if (ver == LINUX_IPC_64 || SV_CURPROC_FLAG(SV_LP64))
-		return (copyin(uaddr, linux_semid64, sizeof(*linux_semid64)));
-	error = copyin(uaddr, &linux_semid, sizeof(linux_semid));
+		return (copyin(__USER_CAP(uaddr, sizeof(*linux_semid64)), linux_semid64, sizeof(*linux_semid64)));
+	error = copyin(__USER_CAP(uaddr, sizeof(linux_semid)), &linux_semid, sizeof(linux_semid));
 	if (error != 0)
 		return (error);
 
@@ -380,13 +380,13 @@ linux_semid_pullup(l_int ver, struct l_semid64_ds *linux_semid64, void * __capab
 }
 
 static int
-linux_semid_pushdown(l_int ver, struct l_semid64_ds *linux_semid64, void * __capability uaddr)
+linux_semid_pushdown(l_int ver, struct l_semid64_ds *linux_semid64, void *uaddr)
 {
 	struct l_semid_ds linux_semid;
 	int error;
 
 	if (ver == LINUX_IPC_64 || SV_CURPROC_FLAG(SV_LP64))
-		return (copyout(linux_semid64, uaddr, sizeof(*linux_semid64)));
+		return (copyout(linux_semid64, __USER_CAP(uaddr, sizeof(*linux_semid64)), sizeof(*linux_semid64)));
 
 	bzero(&linux_semid, sizeof(linux_semid));
 		error = linux_ipc64_perm_to_ipc_perm(&linux_semid64->sem_perm,
@@ -403,19 +403,19 @@ linux_semid_pushdown(l_int ver, struct l_semid64_ds *linux_semid64, void * __cap
 	    linux_semid.sem_ctime != linux_semid64->sem_ctime ||
 	    linux_semid.sem_nsems != linux_semid64->sem_nsems)
 		return (EOVERFLOW);
-	return (copyout(&linux_semid, uaddr, sizeof(linux_semid)));
+	return (copyout(&linux_semid, __USER_CAP(uaddr, sizeof(linux_semid)), sizeof(linux_semid)));
 }
 
 static int
-linux_shmid_pullup(l_int ver, struct l_shmid64_ds *linux_shmid64, void * __capability uaddr)
+linux_shmid_pullup(l_int ver, struct l_shmid64_ds *linux_shmid64, void *uaddr)
 {
 	struct l_shmid_ds linux_shmid;
 	int error;
 
 	if (ver == LINUX_IPC_64 || SV_CURPROC_FLAG(SV_LP64))
-		return (copyin(uaddr, linux_shmid64, sizeof(*linux_shmid64)));
+		return (copyin(__USER_CAP(uaddr, sizeof(*linux_shmid64)), linux_shmid64, sizeof(*linux_shmid64)));
 
-	error = copyin(uaddr, &linux_shmid, sizeof(linux_shmid));
+	error = copyin(__USER_CAP(uaddr, sizeof(linux_shmid)), &linux_shmid, sizeof(linux_shmid));
 	if (error != 0)
 		return (error);
 
@@ -427,13 +427,13 @@ linux_shmid_pullup(l_int ver, struct l_shmid64_ds *linux_shmid64, void * __capab
 }
 
 static int
-linux_shmid_pushdown(l_int ver, struct l_shmid64_ds *linux_shmid64, void * __capability uaddr)
+linux_shmid_pushdown(l_int ver, struct l_shmid64_ds *linux_shmid64, void *uaddr)
 {
 	struct l_shmid_ds linux_shmid;
 	int error;
 
 	if (ver == LINUX_IPC_64 || SV_CURPROC_FLAG(SV_LP64))
-		return (copyout(linux_shmid64, uaddr, sizeof(*linux_shmid64)));
+		return (copyout(linux_shmid64, __USER_CAP(uaddr, sizeof(*linux_shmid64)), sizeof(*linux_shmid64)));
 
 	bzero(&linux_shmid, sizeof(linux_shmid));
 	error = linux_ipc64_perm_to_ipc_perm(&linux_shmid64->shm_perm,
@@ -458,17 +458,17 @@ linux_shmid_pushdown(l_int ver, struct l_shmid64_ds *linux_shmid64, void * __cap
 	    linux_shmid.shm_lpid != linux_shmid64->shm_lpid ||
 	    linux_shmid.shm_nattch != linux_shmid64->shm_nattch)
 		return (EOVERFLOW);
-	return (copyout(&linux_shmid, uaddr, sizeof(linux_shmid)));
+	return (copyout(&linux_shmid, __USER_CAP(uaddr, sizeof(linux_shmid)), sizeof(linux_shmid)));
 }
 
 static int
 linux_shminfo_pushdown(l_int ver, struct l_shminfo64 *linux_shminfo64,
-    void * __capability uaddr)
+    void *uaddr)
 {
 	struct l_shminfo linux_shminfo;
 
 	if (ver == LINUX_IPC_64 || SV_CURPROC_FLAG(SV_LP64))
-		return (copyout(linux_shminfo64, uaddr,
+		return (copyout(linux_shminfo64, __USER_CAP(uaddr, sizeof(*linux_shminfo64)),
 		    sizeof(*linux_shminfo64)));
 
 	bzero(&linux_shminfo, sizeof(linux_shminfo));
@@ -477,7 +477,7 @@ linux_shminfo_pushdown(l_int ver, struct l_shminfo64 *linux_shminfo64,
 	linux_shminfo.shmmni = linux_shminfo64->shmmni;
 	linux_shminfo.shmseg = linux_shminfo64->shmseg;
 	linux_shminfo.shmall = linux_shminfo64->shmall;
-	return (copyout(&linux_shminfo, uaddr, sizeof(linux_shminfo)));
+	return (copyout(&linux_shminfo, __USER_CAP(uaddr, sizeof(linux_shminfo)), sizeof(linux_shminfo)));
 }
 
 #if defined(__i386__) || (defined(__amd64__) && defined(COMPAT_LINUX32))
@@ -514,7 +514,7 @@ linux_semtimedop(struct thread *td, struct linux_semtimedop_args *args)
 	} else
 		tsa = NULL;
 
-	return (kern_semop(td, args->semid, PTRIN(args->tsops),
+	return (kern_semop(td, args->semid, __USER_CAP(args->tsops, sizeof(struct sembuf) * args->nsops),
 	    args->nsops, tsa));
 }
 
