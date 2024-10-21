@@ -525,7 +525,7 @@ linux_getdents64(struct thread *td, struct linux_getdents64_args *args)
 		linux_dirent64->d_type = bdp->d_type;
 		strlcpy(linux_dirent64->d_name, bdp->d_name,
 		    linuxreclen - offsetof(struct l_dirent64, d_name));
-		error = copyout(linux_dirent64, USER_CAP(outp, linuxreclen), linuxreclen);
+		error = copyout(linux_dirent64, __USER_CAP(outp, linuxreclen), linuxreclen);
 		if (error != 0)
 			goto out;
 
