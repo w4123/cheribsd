@@ -626,11 +626,11 @@ linux_semctl(struct thread *td, struct linux_semctl_args *args)
 		return (0);
 	case LINUX_GETALL:
 		cmd = GETALL;
-		semun.array = PTRIN(args->arg.array);
+		semun.array = __USER_CAP_UNBOUNDED(args->arg.array);
 		break;
 	case LINUX_SETALL:
 		cmd = SETALL;
-		semun.array = PTRIN(args->arg.array);
+		semun.array = __USER_CAP_UNBOUNDED(args->arg.array);
 		break;
 	default:
 		linux_msg(td, "ipc type %d is not implemented",
@@ -774,7 +774,7 @@ linux_shmat(struct thread *td, struct linux_shmat_args *args)
 {
 	struct shmat_args bsd_args = {
 		.shmid = args->shmid,
-		.shmaddr = PTRIN(args->shmaddr),
+		.shmaddr = __USER_CAP_UNBOUNDED(args->shmaddr),
 		.shmflg = args->shmflg
 	};
 
@@ -785,7 +785,7 @@ int
 linux_shmdt(struct thread *td, struct linux_shmdt_args *args)
 {
 	struct shmdt_args bsd_args = {
-		.shmaddr = PTRIN(args->shmaddr)
+		.shmaddr = __USER_CAP_UNBOUNDED(args->shmaddr)
 	};
 
 	return (sys_shmdt(td, &bsd_args));
