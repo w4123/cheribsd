@@ -75,7 +75,7 @@ linux_to_bsd_sigaction(l_sigaction_t *lsa, struct sigaction *bsa)
 	unsigned long flags;
 
 	linux_to_bsd_sigset(&lsa->lsa_mask, &bsa->sa_mask);
-	bsa->sa_handler = __USER_CAP_UNBOUND(lsa->lsa_handler);
+	bsa->sa_handler = lsa->lsa_handler;
 	bsa->sa_flags = 0;
 
 	flags = lsa->lsa_flags;

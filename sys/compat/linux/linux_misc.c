@@ -747,7 +747,7 @@ linux_common_wait(struct thread *td, idtype_t idtype, int id, int *statusp,
 		error = copyout(&tmpstat, __USER_CAP_OBJ(statusp), sizeof(int));
 	}
 	if (error == 0 && rup != NULL)
-		error = linux_copyout_rusage(&wru.wru_self, rup);
+		error = linux_copyout_rusage(&wru.wru_self, __USER_CAP(rup, sizeof(struct rusage)));
 	if (error == 0 && infop != NULL && td->td_retval[0] != 0) {
 		sig = bsd_to_linux_signal(siginfo.si_signo);
 		siginfo_to_lsiginfo(&siginfo, &lsi, sig);
