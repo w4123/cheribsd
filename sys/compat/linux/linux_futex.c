@@ -888,7 +888,7 @@ linux_set_robust_list(struct thread *td, struct linux_set_robust_list_args *args
 		return (EINVAL);
 
 	em = em_find(td);
-	em->robust_futexes = args->head;
+	em->robust_futexes = __USER_CAP_OBJ(args->head);
 
 	return (0);
 }
@@ -934,7 +934,7 @@ linux_get_robust_list(struct thread *td, struct linux_get_robust_list_args *args
 	if (error != 0)
 		return (EFAULT);
 
-	return (copyout(&head, args->head, sizeof(l_uintptr_t)));
+	return (copyout(&head, __USER_CAP_OBJ(args->head), sizeof(l_uintptr_t)));
 }
 
 static int
@@ -999,6 +999,7 @@ retry:
 	return (0);
 }
 
+// TODO: This is probably wrong...
 static int
 fetch_robust_entry(struct linux_robust_list * __capability *entry,
     struct linux_robust_list * __capability * __capability head, unsigned int *pi)
