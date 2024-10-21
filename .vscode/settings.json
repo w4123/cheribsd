@@ -42,6 +42,7 @@
         "__threading_support": "c",
         "linux_emul.h": "c",
         "linux.h": "c",
-        "linux32_proto.h": "c"
+        "linux32_proto.h": "c",
+        "__config": "cpp"
     }
 }
