@@ -712,7 +712,7 @@ linux_statx(struct thread *td, struct linux_statx_args *args)
 	    AT_EMPTY_PATH : 0;
 
 	dirfd = (args->dirfd == LINUX_AT_FDCWD) ? AT_FDCWD : args->dirfd;
-	error = linux_kern_statat(td, flags, dirfd, args->pathname,
+	error = linux_kern_statat(td, flags, dirfd, __USER_CAP_PATH(args->pathname),
 	    UIO_USERSPACE, &buf);
 	if (error == 0)
 		error = statx_copyout(&buf, args->statxbuf);
