@@ -704,7 +704,7 @@ linux_to_bsd_msghdr(struct msghdr *bhdr, const struct l_msghdr *lhdr)
 	bhdr->msg_name		= __USER_CAP(lhdr->msg_name, lhdr->msg_namelen);
 	bhdr->msg_namelen	= lhdr->msg_namelen;
 	// TODO: May be wrong due to incompatible types
-	bhdr->msg_iov		= __USER_CAP(lhdr->msg_iov, lhdr->msg_iovlen * sizeof(iovec64));
+	bhdr->msg_iov		= __USER_CAP(lhdr->msg_iov, lhdr->msg_iovlen * sizeof(iovec));
 	bhdr->msg_iovlen	= lhdr->msg_iovlen;
 	// TODO: Check
 	bhdr->msg_control	= __USER_CAP_UNBOUND(lhdr->msg_control);
