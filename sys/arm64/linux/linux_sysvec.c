@@ -249,7 +249,7 @@ int
 linux_rt_sigreturn(struct thread *td, struct linux_rt_sigreturn_args *args)
 {
 	struct l_rt_sigframe *sf;
-	struct l_sigframe *frame;
+	struct l_sigframe * __capability frame;
 	struct trapframe *tf;
 	sigset_t bmask;
 	int error;
@@ -257,7 +257,7 @@ linux_rt_sigreturn(struct thread *td, struct linux_rt_sigreturn_args *args)
 	sf = malloc(sizeof(*sf), M_LINUX, M_WAITOK | M_ZERO);
 
 	tf = td->td_frame;
-	frame = (struct l_sigframe *)tf->tf_sp;
+	frame = (struct l_sigframe * __capability)tf->tf_sp;
 	error = copyin((void * __capability)&frame->sf, sf, sizeof(*sf));
 	if (error != 0) {
 		free(sf, M_LINUX);

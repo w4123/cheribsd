@@ -1288,7 +1288,7 @@ linux_sendto(struct thread *td, struct linux_sendto_args *args)
 		return (error);
 	so = fp->f_data;
 	if ((so->so_state & (SS_ISCONNECTED|SS_ISCONNECTING)) == 0) {
-		msg.msg_name = __USER_CAP(PTRIN(args->to), args->tolen);
+		msg.msg_name = __USER_CAP(args->to, args->tolen);
 		msg.msg_namelen = args->tolen;
 	}
 	msg.msg_iov = &aiov;
@@ -1308,7 +1308,7 @@ linux_recvfrom(struct thread *td, struct linux_recvfrom_args *args)
 	int error, fromlen;
 
 	if (PTRIN(args->fromlen) != NULL) {
-		error = copyin(PTRIN(args->fromlen), &fromlen,
+		error = copyin(__USER_CAP(args->fromlen, sizeof(fromlen)), &fromlen,
 		    sizeof(fromlen));
 		if (error != 0)
 			return (error);
@@ -1341,11 +1341,11 @@ linux_recvfrom(struct thread *td, struct linux_recvfrom_args *args)
 	 * does not contains PR_ADDR flag.
 	 */
 	if (PTRIN(args->from) != NULL && msg.msg_namelen != 0)
-		error = linux_copyout_sockaddr(sa, PTRIN(args->from),
+		error = linux_copyout_sockaddr(sa, __USER_CAP(args->from, msg.msg_namelen),
 		    msg.msg_namelen);
 
 	if (error == 0 && PTRIN(args->fromlen) != NULL)
-		error = copyout(&msg.msg_namelen, PTRIN(args->fromlen),
+		error = copyout(&msg.msg_namelen, __USER_CAP(args->fromlen, sizeof(msg.msg_namelen)),
 		    sizeof(msg.msg_namelen));
 out:
 	free_c(sa, M_SONAME);
@@ -1431,7 +1431,7 @@ linux_sendmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 		data = mtod(control, void *);
 		datalen = 0;
 
-		ptr_cmsg = PTRIN(linux_msghdr.msg_control);
+		ptr_cmsg = __USER_CAP(linux_msghdr.msg_control, linux_msghdr.msg_controllen);
 		clen = linux_msghdr.msg_controllen;
 		do {
 			error = copyin(ptr_cmsg, &linux_cmsg,
@@ -1529,7 +1529,7 @@ int
 linux_sendmsg(struct thread *td, struct linux_sendmsg_args *args)
 {
 
-	return (linux_sendmsg_common(td, args->s, PTRIN(args->msg),
+	return (linux_sendmsg_common(td, args->s, __USER_CAP(args->msg, sizeof(struct l_msghdr)),
 	    args->flags));
 }
 
@@ -1543,7 +1543,7 @@ linux_sendmmsg(struct thread *td, struct linux_sendmmsg_args *args)
 	if (args->vlen > UIO_MAXIOV)
 		args->vlen = UIO_MAXIOV;
 
-	msg = PTRIN(args->msg);
+	msg = __USER_CAP_ARRAY(args->msg, args->vlen);
 	datagrams = 0;
 	while (datagrams < args->vlen) {
 		error = linux_sendmsg_common(td, args->s, &msg->msg_hdr,
@@ -1783,7 +1783,7 @@ linux_recvmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 	struct mbuf *m, *control = NULL;
 	struct mbuf **controlp;
 	struct sockaddr * __capability sa;
-	caddr_t outbuf;
+	char * __capability outbuf;
 	void *data, *udata;
 	int error, skiped;
 
@@ -1812,7 +1812,7 @@ linux_recvmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 
 	if (msg->msg_name != NULL && msg->msg_namelen > 0) {
 		msg->msg_namelen = min(msg->msg_namelen, SOCK_MAXADDRLEN);
-		sa = malloc(msg->msg_namelen, M_SONAME, M_WAITOK);
+		sa = malloc_c(msg->msg_namelen, M_SONAME, M_WAITOK);
 		msg->msg_name = sa;
 	} else {
 		sa = NULL;
@@ -1831,7 +1831,7 @@ linux_recvmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 	 * Note that kern_recvit() updates msg->msg_namelen.
 	 */
 	if (msg->msg_name != NULL && msg->msg_namelen > 0) {
-		msg->msg_name = PTRIN(l_msghdr.msg_name);
+		msg->msg_name = __USER_CAP(l_msghdr.msg_name, l_msghdr.msg_namelen);
 		error = linux_copyout_sockaddr(sa, msg->msg_name,
 		    msg->msg_namelen);
 		if (error != 0)
@@ -1848,9 +1848,9 @@ linux_recvmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 		goto out;
 
 	lcm = malloc(L_CMSG_HDRSZ, M_LINUX, M_WAITOK | M_ZERO);
-	msg->msg_control = mtod(control, struct cmsghdr *);
+	msg->msg_control = mtod(control, struct cmsghdr * __capability);
 	msg->msg_controllen = control->m_len;
-	outbuf = PTRIN(l_msghdr.msg_control);
+	outbuf = __USER_CAP(l_msghdr.msg_control, l_msghdr.msg_controllen);
 	for (m = control; m != NULL; m = m->m_next) {
 		cm = mtod(m, struct cmsghdr *);
 		lcm->cmsg_type = bsd_to_linux_cmsg_type(p, cm->cmsg_type,
@@ -1929,7 +1929,7 @@ bad:
 	}
 	free(iov, M_IOV);
 	free(lcm, M_LINUX);
-	free(sa, M_SONAME);
+	free_c(sa, M_SONAME);
 
 	return (error);
 }
@@ -1945,7 +1945,7 @@ linux_recvmsg(struct thread *td, struct linux_recvmsg_args *args)
 	if (error != 0)
 		return (error);
 	fdrop(fp, td);
-	return (linux_recvmsg_common(td, args->s, PTRIN(args->msg),
+	return (linux_recvmsg_common(td, args->s, __USER_CAP_OBJ(args->msg),
 	    args->flags, &bsd_msg));
 }
 
@@ -2072,7 +2072,7 @@ linux_setsockopt(struct thread *td, struct linux_setsockopt_args *args)
 		case SO_RCVTIMEO:
 			/* FALLTHROUGH */
 		case SO_SNDTIMEO:
-			error = copyin(PTRIN(args->optval), &linux_tv,
+			error = copyin(__USER_CAP(args->optval, sizeof(linux_tv)), &linux_tv,
 			    sizeof(linux_tv));
 			if (error != 0)
 				return (error);
@@ -2147,7 +2147,7 @@ linux_setsockopt(struct thread *td, struct linux_setsockopt_args *args)
 
 	if (name == IPV6_NEXTHOP) {
 		len = args->optlen;
-		error = linux_to_bsd_sockaddr(PTRIN(args->optval), &sa, &len);
+		error = linux_to_bsd_sockaddr(__USER_CAP(args->optval, len), &sa, &len);
 		if (error != 0)
 			return (error);
 
@@ -2156,7 +2156,7 @@ linux_setsockopt(struct thread *td, struct linux_setsockopt_args *args)
 		free(sa, M_SONAME);
 	} else {
 		error = kern_setsockopt(td, args->s, level,
-		    name, PTRIN(args->optval), UIO_USERSPACE, args->optlen);
+		    name, __USER_CAP(args->optval, args->optlen), UIO_USERSPACE, args->optlen);
 	}
 
 	return (error);
@@ -2168,9 +2168,9 @@ linux_sockopt_copyout(struct thread *td, void *val, socklen_t len,
 {
 	int error;
 
-	error = copyout(val, PTRIN(args->optval), len);
+	error = copyout(val, __USER_CAP(args->optval, len), len);
 	if (error == 0)
-		error = copyout(&len, PTRIN(args->optlen), sizeof(len));
+		error = copyout(&len, __USER_CAP(args->optlen, sizeof(len)), sizeof(len));
 	return (error);
 }
 
@@ -2190,7 +2190,7 @@ linux_getsockopt_so_peergroups(struct thread *td,
 
 	len = xu.cr_ngroups * sizeof(l_gid_t);
 	if (args->optlen < len) {
-		error = copyout(&len, PTRIN(args->optlen), sizeof(len));
+		error = copyout(&len, __USER_CAP(args->optlen, sizeof(len)), sizeof(len));
 		if (error == 0)
 			error = ERANGE;
 		return (error);
@@ -2207,7 +2207,7 @@ linux_getsockopt_so_peergroups(struct thread *td,
 			return (error);
 	}
 
-	error = copyout(&len, PTRIN(args->optlen), sizeof(len));
+	error = copyout(&len, __USER_CAP(args->optlen, sizeof(len)), sizeof(len));
 	return (error);
 }
 
@@ -2220,7 +2220,7 @@ linux_getsockopt_so_peersec(struct thread *td,
 
 	len = sizeof(SECURITY_CONTEXT_STRING);
 	if (args->optlen < len) {
-		error = copyout(&len, PTRIN(args->optlen), sizeof(len));
+		error = copyout(&len, __USER_CAP(args->optlen, sizeof(len)), sizeof(len));
 		if (error == 0)
 			error = ERANGE;
 		return (error);
@@ -2358,7 +2358,7 @@ linux_getsockopt(struct thread *td, struct linux_getsockopt_args *args)
 	}
 
 	if (name == IPV6_NEXTHOP) {
-		error = copyin(PTRIN(args->optlen), &len, sizeof(len));
+		error = copyin(__USER_CAP(args->optlen, sizeof(len)), &len, sizeof(len));
                 if (error != 0)
                         return (error);
 		sa = malloc(len, M_SONAME, M_WAITOK);
@@ -2368,22 +2368,22 @@ linux_getsockopt(struct thread *td, struct linux_getsockopt_args *args)
 		if (error != 0)
 			goto out;
 
-		error = linux_copyout_sockaddr(sa, PTRIN(args->optval), len);
+		error = linux_copyout_sockaddr(sa, __USER_CAP(args->optval, len), len);
 		if (error == 0)
-			error = copyout(&len, PTRIN(args->optlen),
+			error = copyout(&len, __USER_CAP(args->optlen, sizeof(len)),
 			    sizeof(len));
 out:
 		free(sa, M_SONAME);
 	} else {
 		if (args->optval) {
-			error = copyin(PTRIN(args->optlen), &len, sizeof(len));
+			error = copyin(__USER_CAP(args->optlen, sizeof(len)), &len, sizeof(len));
 			if (error != 0)
 				return (error);
 		}
 		error = kern_getsockopt(td, args->s, level,
-		    name, PTRIN(args->optval), UIO_USERSPACE, &len);
+		    name, __USER_CAP(args->optval, len), UIO_USERSPACE, &len);
 		if (error == 0)
-			error = copyout(&len, PTRIN(args->optlen),
+			error = copyout(&len, __USER_CAP(args->optlen, sizeof(len)),
 			    sizeof(len));
 	}
 
@@ -2693,7 +2693,7 @@ linux_socketcall(struct thread *td, struct linux_socketcall_args *args)
 
 	if (args->what < LINUX_SOCKET || args->what > LINUX_ARGS_CNT)
 		return (EINVAL);
-	error = copyin(PTRIN(args->args), a, LINUX_ARG_SIZE(args->what));
+	error = copyin(__USER_CAP(args->args, LINUX_ARG_SIZE(args->what)), a, LINUX_ARG_SIZE(args->what));
 	if (error != 0)
 		return (error);
 
