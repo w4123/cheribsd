@@ -128,7 +128,7 @@ linux_fetch_syscall_args(struct thread *td)
 	if (sa->callp->sy_narg > nitems(sa->args))
 		panic("ARM64TODO: Could we have more than %zu args?",
 		    nitems(sa->args));
-	memcpy(sa->args, ap, nitems(sa->args) * sizeof(register_t));
+	memcpy(sa->args, ap, nitems(sa->args) * sizeof(syscallarg_t));
 
 	td->td_retval[0] = 0;
 	return (0);
