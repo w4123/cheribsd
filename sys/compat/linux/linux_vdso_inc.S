@@ -27,11 +27,9 @@
 
 	.section .data
 	.globl _binary_linux_vdso_so_o_start
-	.align 2
 	.type _binary_linux_vdso_so_o_start,#object;
 _binary_linux_vdso_so_o_start:
 	.incbin "linux_vdso.so.o"
-	.align 3
 	.globl _binary_linux_vdso_so_o_end
 _binary_linux_vdso_so_o_end:
 
