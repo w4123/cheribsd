@@ -1080,7 +1080,7 @@ linux_accept_common(struct thread *td, int s, l_uintptr_t addr,
 	if (PTRIN(addr) != NULL) {
 		len = min(ss.ss_len, len);
 		error = linux_copyout_sockaddr((struct sockaddr *)&ss,
-		    addr, len);
+		    PTRIN(addr), len);
 		if (error == 0) {
 			len = ss.ss_len;
 			error = copyout(&len, __USER_CAP(namelen, sizeof(len)), sizeof(len));
@@ -1128,7 +1128,7 @@ linux_getsockname(struct thread *td, struct linux_getsockname_args *args)
 
 	len = min(ss.ss_len, len);
 	error = linux_copyout_sockaddr((struct sockaddr *)&ss,
-	    args->addr, len);
+	    PTRIN(args->addr), len);
 	if (error == 0) {
 		len = ss.ss_len;
 		error = copyout(&len, __USER_CAP(args->namelen, sizeof(len)), sizeof(len));
@@ -1153,7 +1153,7 @@ linux_getpeername(struct thread *td, struct linux_getpeername_args *args)
 
 	len = min(ss.ss_len, len);
 	error = linux_copyout_sockaddr((struct sockaddr *)&ss,
-	    args->addr, len);
+	    PTRIN(args->addr), len);
 	if (error == 0) {
 		len = ss.ss_len;
 		error = copyout(&len, __USER_CAP(args->namelen, sizeof(len)), sizeof(len));
@@ -1341,7 +1341,7 @@ linux_recvfrom(struct thread *td, struct linux_recvfrom_args *args)
 	 * does not contains PR_ADDR flag.
 	 */
 	if (PTRIN(args->from) != NULL && msg.msg_namelen != 0)
-		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, args->from,
+		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, PTRIN(args->from),
 		    msg.msg_namelen);
 
 	if (error == 0 && PTRIN(args->fromlen) != NULL)
@@ -1832,7 +1832,7 @@ linux_recvmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 	 */
 	if (msg->msg_name != NULL && msg->msg_namelen > 0) {
 		msg->msg_name = __USER_CAP(l_msghdr.msg_name, l_msghdr.msg_namelen);
-		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, msg->msg_name,
+		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, PTRIN(msg->msg_name),
 		    msg->msg_namelen);
 		if (error != 0)
 			goto bad;
