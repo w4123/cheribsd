@@ -191,7 +191,7 @@ listxattr(struct thread *td, struct listxattr_args *args)
 			}
 			++key;
 			if (args->list != NULL && args->size > 0) {
-				sprintf(attrname, "%s.%.*s", prefix, keylen, key);
+				sprintf(attrname, "%s.%.*s", prefix, keylen, (__cheri_fromcap char *)key);
 				error = copyout(attrname, args->list, pairlen);
 				if (error != 0)
 					break;
