@@ -82,8 +82,8 @@ MODULE_VERSION(linux64elf, 1);
 static int linux_szsigcode;
 static vm_object_t linux_vdso_obj;
 static char *linux_vdso_mapping;
-extern char _binary_linux_vdso_so_o_start;
-extern char _binary_linux_vdso_so_o_end;
+extern char _binary_linux_vdso_so_o_start[];
+extern char _binary_linux_vdso_so_o_end[];
 static vm_offset_t linux_vdso_base;
 
 extern struct sysent linux_sysent[LINUX_SYS_MAXSYSCALL];
@@ -425,7 +425,7 @@ struct sysentvec elf_linux_sysvec = {
 	.sv_table	= linux_sysent,
 	.sv_fixup	= __elfN(freebsd_fixup),
 	.sv_sendsig	= linux_rt_sendsig,
-	.sv_sigcode	= &_binary_linux_vdso_so_o_start,
+	.sv_sigcode	= _binary_linux_vdso_so_o_start,
 	.sv_szsigcode	= &linux_szsigcode,
 	.sv_name	= "Linux ELF64",
 	.sv_coredump	= elf64_coredump,
@@ -498,8 +498,8 @@ SYSINIT(elf_linux_exec_sysvec_init, SI_SUB_EXEC + 1, SI_ORDER_ANY,
 static void
 linux_vdso_install(const void *param)
 {
-	char *vdso_start = &_binary_linux_vdso_so_o_start;
-	char *vdso_end = &_binary_linux_vdso_so_o_end;
+	char *vdso_start = _binary_linux_vdso_so_o_start);
+	char *vdso_end = _binary_linux_vdso_so_o_end;
 
 	linux_szsigcode = vdso_end - vdso_start;
 	MPASS(linux_szsigcode <= LINUX_VDSOPAGE_SIZE);
