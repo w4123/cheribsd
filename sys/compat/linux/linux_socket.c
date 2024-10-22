@@ -758,7 +758,7 @@ linux_set_socket_flags(int lflags, int *flags)
 }
 
 static int
-linux_copyout_sockaddr(const struct sockaddr *sa, void * __capability uaddr, size_t len)
+linux_copyout_sockaddr(const struct sockaddr *sa, void *uaddr, size_t len)
 {
 	struct l_sockaddr *lsa;
 	int error;
@@ -767,7 +767,7 @@ linux_copyout_sockaddr(const struct sockaddr *sa, void * __capability uaddr, siz
 	if (error != 0)
 		return (error);
 
-	error = copyout(lsa, uaddr, len);
+	error = copyout(lsa, __USER_CAP(uaddr, len), len);
 	free(lsa, M_LINUX);
 
 	return (error);
@@ -785,7 +785,7 @@ linux_sendit(struct thread *td, int s, struct msghdr *mp, int flags,
 		error = linux_to_bsd_sockaddr(__USER_CAP(mp->msg_name, len), &to, &len);
 		if (error != 0)
 			return (error);
-		mp->msg_name = to;
+		mp->msg_name = PTR2CAP(to);
 	} else
 		to = NULL;
 
@@ -1080,7 +1080,7 @@ linux_accept_common(struct thread *td, int s, l_uintptr_t addr,
 	if (PTRIN(addr) != NULL) {
 		len = min(ss.ss_len, len);
 		error = linux_copyout_sockaddr((struct sockaddr *)&ss,
-		    __USER_CAP(addr, len), len);
+		    addr, len);
 		if (error == 0) {
 			len = ss.ss_len;
 			error = copyout(&len, __USER_CAP(namelen, sizeof(len)), sizeof(len));
@@ -1128,7 +1128,7 @@ linux_getsockname(struct thread *td, struct linux_getsockname_args *args)
 
 	len = min(ss.ss_len, len);
 	error = linux_copyout_sockaddr((struct sockaddr *)&ss,
-	    __USER_CAP(args->addr, len), len);
+	    args->addr, len);
 	if (error == 0) {
 		len = ss.ss_len;
 		error = copyout(&len, __USER_CAP(args->namelen, sizeof(len)), sizeof(len));
@@ -1153,7 +1153,7 @@ linux_getpeername(struct thread *td, struct linux_getpeername_args *args)
 
 	len = min(ss.ss_len, len);
 	error = linux_copyout_sockaddr((struct sockaddr *)&ss,
-	    __USER_CAP(args->addr, len), len);
+	    args->addr, len);
 	if (error == 0) {
 		len = ss.ss_len;
 		error = copyout(&len, __USER_CAP(args->namelen, sizeof(len)), sizeof(len));
@@ -1341,7 +1341,7 @@ linux_recvfrom(struct thread *td, struct linux_recvfrom_args *args)
 	 * does not contains PR_ADDR flag.
 	 */
 	if (PTRIN(args->from) != NULL && msg.msg_namelen != 0)
-		error = linux_copyout_sockaddr(sa, __USER_CAP(args->from, msg.msg_namelen),
+		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, args->from,
 		    msg.msg_namelen);
 
 	if (error == 0 && PTRIN(args->fromlen) != NULL)
@@ -1363,7 +1363,7 @@ linux_sendmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 	struct l_cmsghdr linux_cmsg;
 	struct l_cmsghdr * __capability ptr_cmsg;
 	struct l_msghdr linux_msghdr;
-	struct iovec * __capability iov;
+	struct iovec *iov;
 	socklen_t datalen;
 	struct socket *so;
 	sa_family_t sa_family;
@@ -1503,7 +1503,7 @@ next:
 				break;
 
 			clen -= LINUX_CMSG_ALIGN(linux_cmsg.cmsg_len);
-			ptr_cmsg = (struct l_cmsghdr *)((char *)ptr_cmsg +
+			ptr_cmsg = (struct l_cmsghdr * __capability)((char * __capability)ptr_cmsg +
 			    LINUX_CMSG_ALIGN(linux_cmsg.cmsg_len));
 		} while(clen >= sizeof(struct l_cmsghdr));
 
@@ -1521,7 +1521,7 @@ next:
 
 bad:
 	m_freem(control);
-	free(iov, M_IOV);
+	free_c(iov, M_IOV);
 	return (error);
 }
 
@@ -1832,7 +1832,7 @@ linux_recvmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 	 */
 	if (msg->msg_name != NULL && msg->msg_namelen > 0) {
 		msg->msg_name = __USER_CAP(l_msghdr.msg_name, l_msghdr.msg_namelen);
-		error = linux_copyout_sockaddr(sa, msg->msg_name,
+		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, msg->msg_name,
 		    msg->msg_namelen);
 		if (error != 0)
 			goto bad;
@@ -2201,7 +2201,7 @@ linux_getsockopt_so_peergroups(struct thread *td,
 	 */
 	for (i = 0; i < xu.cr_ngroups - 1; i++) {
 		error = copyout(xu.cr_groups + i + 1,
-		    (void *)(args->optval + i * sizeof(l_gid_t)),
+		    __USER_CAP(args->optval + i * sizeof(l_gid_t), sizeof(l_gid_t)),
 		    sizeof(l_gid_t));
 		if (error != 0)
 			return (error);
@@ -2253,7 +2253,7 @@ linux_getsockopt(struct thread *td, struct linux_getsockopt_args *args)
 	l_timeval linux_tv;
 	struct timeval tv;
 	socklen_t tv_len, xulen, len;
-	struct sockaddr *sa;
+	struct sockaddr * __capability sa;
 	struct xucred xu;
 	struct l_ucred lxu;
 	int error, level, name, newval;
@@ -2361,19 +2361,19 @@ linux_getsockopt(struct thread *td, struct linux_getsockopt_args *args)
 		error = copyin(__USER_CAP(args->optlen, sizeof(len)), &len, sizeof(len));
                 if (error != 0)
                         return (error);
-		sa = malloc(len, M_SONAME, M_WAITOK);
+		sa = malloc_c(len, M_SONAME, M_WAITOK);
 
 		error = kern_getsockopt(td, args->s, level,
 		    name, sa, UIO_SYSSPACE, &len);
 		if (error != 0)
 			goto out;
 
-		error = linux_copyout_sockaddr(sa, __USER_CAP(args->optval, len), len);
+		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, args->optval, len);
 		if (error == 0)
 			error = copyout(&len, __USER_CAP(args->optlen, sizeof(len)),
 			    sizeof(len));
 out:
-		free(sa, M_SONAME);
+		free_c(sa, M_SONAME);
 	} else {
 		if (args->optval) {
 			error = copyin(__USER_CAP(args->optlen, sizeof(len)), &len, sizeof(len));
@@ -2444,7 +2444,7 @@ sendfile_fallback(struct thread *td, struct file *fp, l_int out,
 	struct uio auio;
 	bool seekable;
 	size_t bufsz;
-	void *buf;
+	void * __capability buf;
 	int flags, error;
 
 	if (offset == NULL) {
@@ -2469,7 +2469,7 @@ sendfile_fallback(struct thread *td, struct file *fp, l_int out,
 
 	flags = FOF_OFFSET | FOF_NOUPDATE;
 	bufsz = min(count, maxphys);
-	buf = malloc(bufsz, M_LINUX, M_WAITOK);
+	buf = malloc_c(bufsz, M_LINUX, M_WAITOK);
 	bytes_sent = 0;
 	while (bytes_sent < count) {
 		to_send = min(count - bytes_sent, bufsz);
@@ -2504,7 +2504,7 @@ sendfile_fallback(struct thread *td, struct file *fp, l_int out,
 		current_offset += n_read;
 		out_offset += n_read;
 	}
-	free(buf, M_LINUX);
+	free_c(buf, M_LINUX);
 
 	if (error == 0) {
 		*sbytes = bytes_sent;
@@ -2621,7 +2621,7 @@ linux_sendfile(struct thread *td, struct linux_sendfile_args *arg)
 	int error;
 
 	if (arg->offset != NULL) {
-		error = copyin(arg->offset, &offset, sizeof(offset));
+		error = copyin(__USER_CAP_OBJ(arg->offset), &offset, sizeof(offset));
 		if (error != 0)
 			return (error);
 		offset64 = offset;
@@ -2636,7 +2636,7 @@ linux_sendfile(struct thread *td, struct linux_sendfile_args *arg)
 			return (EOVERFLOW);
 #endif
 		offset = (l_off_t)offset64;
-		error = copyout(&offset, arg->offset, sizeof(offset));
+		error = copyout(&offset, __USER_CAP_OBJ(arg->offset), sizeof(offset));
 	}
 
 	return (error);
