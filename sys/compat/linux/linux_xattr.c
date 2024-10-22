@@ -131,7 +131,7 @@ static int
 listxattr(struct thread *td, struct listxattr_args *args)
 {
 	char attrname[LINUX_XATTR_NAME_MAX + 1];
-	char * __capability data, *prefix, *key;
+	char * __capability data, *prefix, * __capability key;
 	struct uio auio;
 	struct iovec aiov;
 	unsigned char keylen;
