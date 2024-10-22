@@ -782,7 +782,7 @@ linux_sendit(struct thread *td, int s, struct msghdr *mp, int flags,
 
 	if (mp->msg_name != NULL) {
 		len = mp->msg_namelen;
-		error = linux_to_bsd_sockaddr(__USER_CAP(mp->msg_name, len), &to, &len);
+		error = linux_to_bsd_sockaddr(mp->msg_name, &to, &len);
 		if (error != 0)
 			return (error);
 		mp->msg_name = PTR2CAP(to);
