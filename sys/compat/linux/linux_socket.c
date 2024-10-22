@@ -1831,8 +1831,8 @@ linux_recvmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 	 * Note that kern_recvit() updates msg->msg_namelen.
 	 */
 	if (msg->msg_name != NULL && msg->msg_namelen > 0) {
-		msg->msg_name = __USER_CAP(l_msghdr.msg_name, l_msghdr.msg_namelen);
-		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, PTRIN(msg->msg_name),
+		msg->msg_name = __USER_CAP(l_msghdr.msg_name, msg->msg_namelen);
+		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, PTRIN(l_msghdr.msg_name),
 		    msg->msg_namelen);
 		if (error != 0)
 			goto bad;

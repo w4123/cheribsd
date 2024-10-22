@@ -2193,7 +2193,7 @@ linux_ifconf(struct thread *td, struct ifconf *uifc)
 		return (error);
 
 	/* handle the 'request buffer size' case */
-	if (PTRIN(ifc.ifc_buf) == NULL) {
+	if (ifc.ifc_buf == NULL) {
 		ifc.ifc_len = 0;
 		NET_EPOCH_ENTER(et);
 		if_foreach(linux_ifconf_ifnet_cb, &ifc);
@@ -2227,7 +2227,7 @@ again:
 
 	ifc.ifc_len = cbs.valid_len;
 	sbuf_finish(sb);
-	error = copyout(sbuf_data(sb), __USER_CAP(ifc.ifc_buf, ifc.ifc_len), ifc.ifc_len);
+	error = copyout(sbuf_data(sb), ifc.ifc_buf, ifc.ifc_len);
 	if (error == 0)
 		error = copyout(&ifc, __USER_CAP_OBJ(uifc), sizeof(ifc));
 	sbuf_delete(sb);
