@@ -498,7 +498,7 @@ SYSINIT(elf_linux_exec_sysvec_init, SI_SUB_EXEC + 1, SI_ORDER_ANY,
 static void
 linux_vdso_install(const void *param)
 {
-	char *vdso_start = _binary_linux_vdso_so_o_start);
+	char *vdso_start = _binary_linux_vdso_so_o_start;
 	char *vdso_end = _binary_linux_vdso_so_o_end;
 
 	linux_szsigcode = vdso_end - vdso_start;
