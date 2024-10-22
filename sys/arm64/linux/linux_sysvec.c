@@ -485,7 +485,7 @@ linux_on_exec_vmspace(struct proc *p, struct image_params *imgp)
 static void
 linux_exec_sysvec_init(void *param)
 {
-	l_uintptr_t *ktimekeep_base;
+	l_ulong *ktimekeep_base;
 	struct sysentvec *sv;
 	ptrdiff_t tkoff;
 
@@ -494,7 +494,7 @@ linux_exec_sysvec_init(void *param)
 	exec_sysvec_init(sv);
 
 	tkoff = kern_timekeep_base - linux_vdso_base;
-	ktimekeep_base = (l_uintptr_t *)(linux_vdso_mapping + tkoff);
+	ktimekeep_base = (l_ulong *)(linux_vdso_mapping + tkoff);
 	*ktimekeep_base = sv->sv_shared_page_base + sv->sv_timekeep_offset;
 }
 SYSINIT(elf_linux_exec_sysvec_init, SI_SUB_EXEC + 1, SI_ORDER_ANY,
