@@ -503,8 +503,8 @@ SYSINIT(elf_linux_exec_sysvec_init, SI_SUB_EXEC + 1, SI_ORDER_ANY,
 static void
 linux_vdso_install(const void *param)
 {
-	char *vdso_start = (__cheri_tocap char *)(__cheri_fromcap uint64_t)&_binary_linux_vdso_so_o_start;
-	char *vdso_end = (__cheri_tocap char *)(__cheri_fromcap uint64_t)&_binary_linux_vdso_so_o_end;
+	char *vdso_start = __USER_CAP_UNBOUND(&_binary_linux_vdso_so_o_start);
+	char *vdso_end = __USER_CAP_UNBOUND(&_binary_linux_vdso_so_o_end);
 
 	linux_szsigcode = vdso_end - vdso_start;
 	MPASS(linux_szsigcode <= LINUX_VDSOPAGE_SIZE);
