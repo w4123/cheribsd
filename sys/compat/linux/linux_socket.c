@@ -2368,7 +2368,7 @@ linux_getsockopt(struct thread *td, struct linux_getsockopt_args *args)
 		if (error != 0)
 			goto out;
 
-		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, args->optval, len);
+		error = linux_copyout_sockaddr((__cheri_fromcap const struct sockaddr *)sa, PTRIN(args->optval), len);
 		if (error == 0)
 			error = copyout(&len, __USER_CAP(args->optlen, sizeof(len)),
 			    sizeof(len));
