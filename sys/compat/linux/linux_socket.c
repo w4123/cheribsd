@@ -1514,14 +1514,14 @@ next:
 		}
 	}
 
-	msg.msg_iov = iov;
+	msg.msg_iov = PTR2CAP(iov);
 	msg.msg_flags = 0;
 	error = linux_sendit(td, s, &msg, flags, control, UIO_USERSPACE);
 	control = NULL;
 
 bad:
 	m_freem(control);
-	free_c(iov, M_IOV);
+	free(iov, M_IOV);
 	return (error);
 }
 
@@ -1820,7 +1820,7 @@ linux_recvmsg_common(struct thread *td, l_int s, struct l_msghdr * __capability 
 	}
 
 	uiov = msg->msg_iov;
-	msg->msg_iov = iov;
+	msg->msg_iov = PTR2CAP(iov);
 	controlp = (msg->msg_control != NULL) ? &control : NULL;
 	error = kern_recvit(td, s, msg, UIO_SYSSPACE, controlp);
 	msg->msg_iov = uiov;
@@ -2152,7 +2152,7 @@ linux_setsockopt(struct thread *td, struct linux_setsockopt_args *args)
 			return (error);
 
 		error = kern_setsockopt(td, args->s, level,
-		    name, sa, UIO_SYSSPACE, len);
+		    name, PTR2CAP(sa), UIO_SYSSPACE, len);
 		free(sa, M_SONAME);
 	} else {
 		error = kern_setsockopt(td, args->s, level,
